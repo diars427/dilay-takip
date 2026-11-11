@@ -174,7 +174,7 @@ main.oniz::before{content:'👁 Önizleme: paylaştığın kişiler uygulamayı 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="bulut.js"></script>
-<script src="kaynak-veri.js"></script>
+<script src="kaynak-veri.js?v=8"></script>
 <script src="deneme-veri.js"></script>
 <script>
 'use strict';
@@ -808,7 +808,7 @@ function kitapAc(n) {
   let rows = '';
   b.rows.forEach((r, i) => {
     if (r.sec) { const ch = []; for (let j = i + 1; j < b.rows.length && !b.rows[j].b; j++) ch.push(j); const on = ch.filter(j => kval(b, j)).length; rows += `<div class="trow sec" data-ksec="${i}"><span class="cb ${on == ch.length ? 'on' : on ? 'mix' : ''}">${on == ch.length ? '✓' : on ? '–' : ''}</span><div class="n">${esc(r.n)} <span class="mut">${on}/${ch.length}</span></div><div class="p">${esc(r.p)}</div></div>`; }
-    else { const v = kval(b, i), pp = pl[testAd(b, i)]; rows += `<div class="trow ${r.child ? 'ch' : ''}" data-ki="${i}"><span class="cb ${v ? 'on' : (r.s == 'Kısmen' ? 'half' : '')}">${v ? '✓' : ''}</span><div class="n">${esc(r.child ? r.n : (r.a || r.n))}${r.t ? ' <span class="mut">• ' + esc(r.t) + '</span>' : ''}${(!v && r.s == 'Kısmen') ? ' <span class="chip y">yarım</span>' : ''}${pp ? ` <span class="chip b">📅 ${tarihK(parseD(pp.split('|')[0]))}</span>` : ''}</div><div class="p">${esc(r.p)}</div></div>`; }
+    else { const v = kval(b, i), pp = pl[testAd(b, i)]; rows += `<div class="trow ${r.child ? 'ch' : ''}" data-ki="${i}"><span class="cb ${v ? 'on' : (r.s == 'Kısmen' ? 'half' : '')}">${v ? '✓' : ''}</span><div class="n">${esc(r.a || r.n)}${r.t ? ' <span class="mut">• ' + esc(r.t) + '</span>' : ''}${(!v && r.s == 'Kısmen') ? ' <span class="chip y">yarım</span>' : ''}${pp ? ` <span class="chip b">📅 ${tarihK(parseD(pp.split('|')[0]))}</span>` : ''}</div><div class="p">${esc(r.p)}</div></div>`; }
   });
   $('#mbox').innerHTML = `<div class="mh"><span class="sp"></span><button class="btn" data-x="1">✕</button></div><div class="hd"><div class="cv" style="background-image:url('${b.cov}')"></div><div><h2 style="font-size:17px;margin-bottom:8px">${esc(b.name)}</h2><span class="chip" style="background:${c};color:#fff">${k}</span> <b style="font-size:22px">${p == null ? '' : '%' + p}</b><div class="bar" style="height:9px"><i style="width:${p || 0}%;background:${c}"></i></div></div></div>
     ${b.note ? `<div class="card"><h3>Durum</h3>${esc(b.note)}</div>` : ''}
@@ -1412,7 +1412,7 @@ function toast(msg, geri) {
   t.classList.add('on'); clearTimeout(toastZ); toastZ = setTimeout(() => t.classList.remove('on'), geri ? 8000 : 3500);
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('#modal2').classList.contains('on')) $('#modal2').classList.remove('on'); else if (PL) planKapat(); else if (DN) denemeKapat(); else if (acikKitap != null) { acikKitap = null; $('#modal').classList.remove('on'); } } });
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => { });
 /* ====== Uygulamayi indir (Android / bilgisayar: gercek yukleme; iPhone: tarif) ====== */
 let yuklemeIstegi = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); yuklemeIstegi = e; });

@@ -174,7 +174,7 @@ main.oniz::before{content:'👁 Önizleme: paylaştığın kişiler uygulamayı 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="bulut.js"></script>
-<script src="kaynak-veri.js?v=10"></script>
+<script src="kaynak-veri.js?v=11"></script>
 <script src="deneme-veri.js"></script>
 <script>
 'use strict';
@@ -217,7 +217,6 @@ async function basla() {
 // kullanici adi -> giris adresi (e-postasi olmayanlar icin; kimseye mail gitmez)
 const kullaniciEposta = s => { s = String(s || '').trim().toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ı/g, 'i').replace(/\s+/g, ''); return s.includes('@') ? s : s + '@' + (AYAR.KULLANICI_ALANI || 'dilaytakip.local'); };
 // tarayicida acilinca: once sadece "Uygulamayi ekle"; giris uygulamanin icinde
-let tarayicidaDevam = false; try { tarayicidaDevam = localStorage.getItem('dt_tarayici') === '1'; } catch (e) { }
 let sonGirisHata = '';
 async function cizEkle(durum) {
   $('#rolc').textContent = ''; $('#ucd').textContent = '';
@@ -226,12 +225,10 @@ async function cizEkle(durum) {
   const ic = durum === 'eklendi' || durum === 'ekli'
     ? `<div style="font-size:48px;margin:6px 0">✅</div><h3 style="margin:0 0 8px">${durum === 'eklendi' ? 'Uygulama eklendi' : 'Uygulama zaten ekli'}</h3><p class="mut" style="margin:0">${simge} <b>Dilay Takip</b> simgesine ${mobil ? 'dokun' : 'tıkla'}, orada giriş yap.</p>`
     : `<button class="btn ok" data-indir="1" style="width:100%;padding:16px;font-size:17px;margin-top:6px">📲 Uygulamayı ekle</button>`;
-  $('#app').innerHTML = `<div class="giris"><div class="card" style="text-align:center"><h2>YKS Dilay Takip</h2>${ic}
-    <div style="margin-top:22px"><a href="#" id="tardev" class="mut sm" style="opacity:.6">tarayıcıda devam et</a></div></div></div>`;
-  $('#tardev').onclick = e => { e.preventDefault(); tarayicidaDevam = true; try { localStorage.setItem('dt_tarayici', '1'); } catch (x) { } cizGiris(sonGirisHata); };
+  $('#app').innerHTML = `<div class="giris"><div class="card" style="text-align:center"><h2>YKS Dilay Takip</h2>${ic}<span id="tardev"></span></div></div>`;
 }
 function cizGiris(hata) {
-  if (!kuruluMu() && !tarayicidaDevam) { sonGirisHata = hata || ''; return cizEkle(); }
+  if (!kuruluMu()) { sonGirisHata = hata || ''; return cizEkle(); }
   $('#rolc').textContent = ''; $('#ucd').textContent = '';
   $('#app').innerHTML = `<div class="giris"><div class="card"><h2>YKS Dilay Takip</h2><p class="mut">Haftalık plan, kaynak takibi ve denemeler. Giriş yap:</p>
     <label>Kullanıcı adı</label><input type="text" id="ge" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="kullanıcı adın">

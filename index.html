@@ -567,6 +567,8 @@ app.addEventListener('click', async e => {
   const os = e.target.closest('[data-odsil]'); if (os) { if (await onayla('Bu ödev silinsin mi?')) { B.yaz([{ s: 'odev', k: os.dataset.odsil, v: Object.assign({}, B.get('odev', os.dataset.odsil), { sil: true }) }]); acikOdev = null; ciz(); } return; }
   const oc = e.target.closest('[data-oc]'); if (oc && DILAY()) { const od = Object.assign({}, B.get('odev', acikOdev)); od.cozum = Object.assign({}, od.cozum || {}); od.cozum[oc.dataset.ok] = od.cozum[oc.dataset.ok] === oc.dataset.oc ? undefined : oc.dataset.oc; if (!od.cozum[oc.dataset.ok]) delete od.cozum[oc.dataset.ok]; B.yaz([{ s: 'odev', k: acikOdev, v: od }]); const sy = scrollY; ciz(); scrollTo(0, sy); return; }
   if (e.target.closest('[data-nohq]')) return;
+  const hk = e.target.closest('[data-hk]'); if (hk) { hataAc(hk.dataset.hk); return; }
+  const op = e.target.closest('[data-odplan]'); if (op) { e.stopPropagation(); odevPlana(op.dataset.odplan); return; }
   const q = e.target.closest('[data-hq]');
   if (q) { const p = q.dataset.hq.split('|'), qn = +p.pop(), a = p.pop(), id = p.join('|'), r = denemeler().find(x => x.id === id), m = (((r || {}).alan || {})[a] || {}).m || {}; soruAc(id, a, qn, m[qn]); }
 }, true);
@@ -595,13 +597,15 @@ app.addEventListener('click', e => {
     case 'seciptal': secili = null; ciz(); break;
     case 'temizmenu': temizMenu(e); break;
     case 'guntemizle': { const d = addD(hafta, +t.dataset.g); temizleF(ds => ds === dk(d), `${GUN[gi(d)]} ${tarihK(d)} gününün`); break; }
-    case 'dsek': dSek = t.dataset.v; hDers = 'Hepsi'; ciz(); break;
-    case 'hders': hDers = t.dataset.v; ciz(); break;
+    case 'dsek': dSek = t.dataset.v; ciz(); break;
+    case 'htur': hTur = t.dataset.v; ciz(); break;
+    case 'hataekle': hataDuzenle(null); break;
+    case 'tumsec': document.querySelectorAll('[data-odsec]').forEach(c => odevSec.add(c.dataset.odsec)); ciz(); toast(odevSec.size + ' soru seçildi.'); break;
+    case 'secimtemizle': odevSec.clear(); ciz(); break;
     case 'yazdir': window.print(); break;
     case 'pdfindir': pdfIndir(); break;
     case 'ay': dAy = t.dataset.v; ciz(); break;
     case 'dekle': denemeEkle(t.dataset.ay, t.dataset.wi); break;
-    case 'nders': nDers = t.dataset.v; ciz(); break;
     case 'notekle': notDuzenle(null); break;
     case 'odevgeri': acikOdev = null; ciz(); break;
     case 'odevolustur': odevOlustur(); break;
@@ -611,6 +615,8 @@ app.addEventListener('click', e => {
 let notZ = null;
 app.addEventListener('change', e => {
   if (e.target.id === 'toplupdf' && e.target.files.length) topluPdf([...e.target.files]);
+  if (e.target.dataset.nf) { if (e.target.dataset.nf === 'ders') { nDers = e.target.value; nKonu = ''; } else nKonu = e.target.value; ciz(); return; }
+  if (e.target.dataset.hf) { if (e.target.dataset.hf === 'grup') { hGrup = e.target.value; hKonu = ''; } else hKonu = e.target.value; ciz(); return; }
   if (e.target.dataset.odsec) { if (e.target.checked) odevSec.add(e.target.dataset.odsec); else odevSec.delete(e.target.dataset.odsec); const b = document.querySelector('[data-a=odevolustur]'); if (b) b.textContent = '📝 Ödev oluştur (' + odevSec.size + ')'; }
 });
 app.addEventListener('input', e => {
@@ -837,10 +843,10 @@ function haftaAdi(ay, wi) { const m = DD.months.find(x => x.name === ay), w = m 
 function cizDeneme() {
   const L = denemeler();
   let h = `<div class="chips"><button class="on">${SEZON}</button><span style="width:10px"></span>
-    ${[['liste', 'Denemeler'], ['hata', 'Hatalar'], ['dikkat', 'Dikkat hataları'], ['notlar', 'Notlar'], ['odev', 'Ödevler']].map(([k, a]) => `<button class="${dSek === k ? 'on' : ''}" data-a="dsek" data-v="${k}">${a}</button>`).join('')}</div>`;
+    ${[['liste', 'Denemeler'], ['hata', 'Hatalarım'], ['notlar', 'Notlar'], ['odev', 'Ödevler']].map(([k, a]) => `<button class="${dSek === k ? 'on' : ''}" data-a="dsek" data-v="${k}">${a}</button>`).join('')}</div>`;
   if (dSek === 'notlar') return h + cizNotlar();
   if (dSek === 'odev') return h + cizOdevler();
-  if (dSek !== 'liste') return h + cizHataListe(dSek, L);
+  if (dSek !== 'liste') return h + cizHatalarim(L);
   const coz = L.filter(x => x.done), ty = coz.filter(x => tur(x.t) === 'TYT' && toplamNet(x) != null), ay = coz.filter(x => tur(x.t) === 'AYT' && toplamNet(x) != null);
   const ort = a => a.length ? fmt(a.reduce((s, x) => s + toplamNet(x), 0) / a.length) : '–';
   const son = ty.slice(-12), mx = Math.max(120, ...son.map(x => toplamNet(x)));
@@ -859,36 +865,86 @@ function cizDeneme() {
   if (DILAY() && GOMULU) h += `<div class="card" style="margin-top:16px"><h3>Eski deneme defteri</h3><div class="mut sm">Kazanımlar, not defterleri ve deneme PDF'leri eski deneme takibinde duruyor.</div><div class="row" style="margin-top:8px"><a class="btn" href="../yks-takip/index.html">Eski deneme takibini aç</a><button class="btn" data-a="aktar">Eski takipteki netleri tekrar aktar</button></div></div>`;
   return h;
 }
-// hatalar (yanlis + bos) ya da dikkat hatalari: tum denemelerden, yazdirilabilir
-function hataListesi(tip, L) {
+/* ====== KONULAR (Kaynaklar > Konular basliklari + sosyal dersler) ====== */
+const EKKONU = [{"t":"TYT Tarih","items":["Tarih ve Zaman","İnsanlığın İlk Dönemleri","İlk ve Orta Çağlarda Türk Dünyası","İslam Medeniyetinin Doğuşu ve İlk İslam Devletleri","Türklerin İslamiyet’i Kabulü ve İlk Türk İslam Devletleri","Orta Çağ’da Dünya","Yerleşme ve Devletleşme Sürecinde Selçuklu Türkiyesi","Beylikten Devlete Osmanlı Siyaseti","Devletleşme Sürecinde Savaşçılar ve Askerler","Beylikten Devlete Osmanlı Medeniyeti","Dünya Gücü Osmanlı","Sultan ve Osmanlı Merkez Teşkilatı","Klasik Çağda Osmanlı Toplum Düzeni","Değişen Dünya Dengeleri Karşısında Osmanlı Siyaseti","Değişim Çağında Avrupa ve Osmanlı","Uluslararası İlişkilerde Denge Stratejisi (1774-1914)","Devrimler Çağında Değişen Devlet-Toplum İlişkileri","Sermaye ve Emek","XIX. ve XX. Yüzyılda Değişen Gündelik Hayat","XX. Yüzyıl Başlarında Osmanlı Devleti ve Dünya","Milli Mücadele","Atatürkçülük ve Türk İnkılabı"]},{"t":"TYT Coğrafya","items":["Doğa ve İnsan","Dünya’nın Şekli ve Hareketleri","Coğrafi Konum","Harita Bilgisi","İklim Bilgisi","Dünya’nın Tektonik Oluşumu","Jeolojik Zamanlar","İç Kuvvetler / Dış Kuvvetler","Kayaçlar","Türkiye’nin Yer Şekilleri","Su – Toprak ve Bitkiler","Nüfus","Türkiye’de Nüfus","Göç","Ekonomik Faaliyetler","Bölgeler","Uluslararası Ulaşım Hatları","Çevre ve Toplum","Doğal Afetler"]},{"t":"TYT Felsefe","items":["Felsefe’nin Konusu","Bilgi Felsefesi","Varlık Felsefesi","Ahlak Felsefesi","Sanat Felsefesi","Din Felsefesi","Siyaset Felsefesi","Bilim Felsefesi","İlk Çağ Felsefesi","2. Yüzyıl ve 15. Yüzyıl Felsefeleri","15. Yüzyıl ve 17. Yüzyıl Felsefeleri","18. Yüzyıl ve 19. Yüzyıl Felsefeleri","20. Yüzyıl Felsefesi"]},{"t":"TYT Din","items":["Bilgi ve İnanç","Din ve İslam","İslam ve İbadet","Gençlik ve Değerler","İslam Medeniyeti ve Özellikleri","Allah İnancı ve İnsan","Allah’ın Varlığı ve Birliği","Allah’ın İsim ve Sıfatları","Kur’an-ı Kerim’de İnsan ve Özellikleri","İnsanın Allah İle İrtibatı","Kur’an-ı Kerim’de Gençler","Bir Genç Olarak Hz. Muhammed","Hz. Muhammed ve Gençler","Bazı Genç Sahabiler","Din ve Aile","Din, Kültür ve Sanat","Din ve Çevre","Din ve Sosyal Değişim","Din ve Ekonomi","Din ve Sosyal Adalet","Ahlaki Tutum ve Davranışlar","İslam Düşüncesinde İtikadi, Siyasi ve Fıkhi Yorumlar"]}];
+const KG = [...((window.KD && KD.konu) || []).map(k => ({ t: k.t, items: k.items.map(i => i[0]) })), ...EKKONU];
+const KG_AD = KG.map(g => g.t);
+function varsayilanGrup(r, ders) { const ad = tur(r.t) + ' ' + ders; return KG_AD.includes(ad) ? ad : (KG_AD.find(x => x.endsWith(' ' + ders)) || ''); }
+const konuItems = g => ((KG.find(x => x.t === g) || {}).items || []);
+function konuSec(on, grup, konu, ro) {
+  const it = konuItems(grup), ek = konu && !it.includes(konu) ? [konu] : [];
+  return `<select data-kg="${on}" ${ro ? 'disabled' : ''} style="flex:1;min-width:160px"><option value="">Ders seç</option>${KG_AD.map(g => `<option ${g === grup ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select>
+    <select data-kk="${on}" ${ro ? 'disabled' : ''} style="flex:2;min-width:180px"><option value="">Konu seç</option>${[...ek, ...it].map(k => `<option ${k === konu ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select>`;
+}
+document.addEventListener('change', e => { const on = e.target.dataset && e.target.dataset.kg; if (!on) return; const kk = document.querySelector(`[data-kk="${on}"]`); if (kk) kk.innerHTML = '<option value="">Konu seç</option>' + konuItems(e.target.value).map(k => `<option>${esc(k)}</option>`).join(''); });
+
+/* ====== HATALARIM: denemelerde isaretlenenler + elle eklenenler; tur / ders / konu ile ====== */
+const TURAD = { y: 'Yanlış', k: 'Dikkat hatası', b: 'Boş' };
+function hataTumu(L) {
   const o = [];
   L.forEach(r => alanlar(r).forEach(([a, N, alt]) => {
     const m = ((r.alan || {})[a] || {}).m || {};
     Object.keys(m).map(Number).sort((x, y) => x - y).forEach(q => {
-      const v = m[q]; if (tip === 'dikkat' ? v !== 'k' : (v !== 'y' && v !== 'b')) return;
-      const ders = (alt.find(z => q >= z[1] && q <= z[2]) || [a])[0];
-      o.push({ r, a, q, v, ders, s: B.get('soru', soruKey(r.id, a, q)) || {}, kn: B.get('sorunot', soruKey(r.id, a, q)) });
+      const v = m[q]; if (!TURAD[v]) return;
+      const ders = (alt.find(z => q >= z[1] && q <= z[2]) || [a])[0], k = soruKey(r.id, a, q), s = B.get('soru', k) || {};
+      o.push({ k, r, a, q, v, ders, grup: s.grup || varsayilanGrup(r, ders), konu: s.konu || '', s, kn: B.get('sorunot', k), baslik: ders + ' · ' + q + '. soru', kaynak: r.ad });
     });
   }));
+  Object.entries(B.hepsi('hata')).forEach(([id, x]) => {
+    if (!x || x.sil) return; const k = 'h|' + id;
+    o.push({ k, manuel: true, id, v: x.tur || 'y', grup: x.grup || '', konu: x.konu || '', s: { img: x.img, not: x.not }, kn: B.get('sorunot', k), baslik: x.grup || 'Soru', kaynak: DILAY() ? (x.kaynak || 'Kendi eklediğim soru') : 'Eklenen soru' });
+  });
   return o;
 }
-let hDers = 'Hepsi';
-function cizHataListe(tip, L) {
-  const H = hataListesi(tip, L), dersler = ['Hepsi', ...new Set(H.map(x => x.ders))], G = H.filter(x => hDers === 'Hepsi' || x.ders === hDers);
-  let h = `<div class="row noprint" style="margin-bottom:10px"><div class="chips" style="margin:0">${dersler.map(d => `<button class="${d === hDers ? 'on' : ''}" data-a="hders" data-v="${esc(d)}">${esc(d)} (${d === 'Hepsi' ? H.length : H.filter(x => x.ders === d).length})</button>`).join('')}</div><span class="sp"></span><button class="btn" data-a="odevolustur">📝 Ödev oluştur (${odevSec.size})</button><button class="btn" data-a="pdfindir">📄 PDF indir</button><button class="btn pri" data-a="yazdir">🖨 Yazdır (yanında çözüm alanı)</button></div>
-    <div class="baski-baslik">${tip === 'dikkat' ? 'Dikkat hatalarım' : 'Hatalarım (yanlış + boş)'} · ${hDers} · ${G.length} soru · ${new Date().toLocaleDateString('tr-TR')}</div>`;
-  if (!G.length) return h + `<div class="card mut">${tip === 'dikkat' ? 'Henüz dikkat hatası işaretlenmedi. Denemede soruya iki kez dokununca bordo (dikkat hatası) olur.' : 'Henüz hata yok.'}</div>`;
-  const TK = tekrarSay();
-  G.forEach(x => {
-    const kk = soruKey(x.r.id, x.a, x.q), tk = TK[kk];
-    h += `<div class="pq" data-hq="${esc(x.r.id)}|${esc(x.a)}|${x.q}"><div class="pq-sol"><div class="row" style="margin-bottom:6px"><b>${esc(x.ders)} · ${x.q}. soru</b><span class="chip ${x.v === 'k' ? 'r' : x.v === 'b' ? 'y' : 'r'}" style="${x.v === 'k' ? 'background:#6b1f2a;color:#fff' : ''}">${x.v === 'k' ? 'Dikkat hatası' : x.v === 'b' ? 'Boş' : 'Yanlış'}</span><span class="mut sm">${esc(x.r.ad)}</span>${tk ? `<span class="chip noprint">tekrar: ${tk.d}✓ ${tk.y}✗</span>` : ''}<span class="sp"></span><label class="noprint sm row" style="gap:4px" data-nohq="1"><input type="checkbox" data-odsec="${esc(kk)}" ${odevSec.has(kk) ? 'checked' : ''}> ödeve ekle</label></div>
-      ${x.s.f ? `<div class="soru">${guvenli(x.s.f)}</div>` : x.s.img ? `<div class="soru"><img src="${x.s.img}"></div>` : `<div class="mut sm" style="padding:10px;border:1px dashed var(--line);border-radius:8px">Soru görseli yok — ${esc(x.r.ad)}, ${esc(x.a)} ${x.q}. soru</div>`}
+let hTur = 'Hepsi', hGrup = '', hKonu = '';
+function cizHatalarim(L) {
+  const H = hataTumu(L), T = tekrarSay(), tH = H.filter(x => hTur === 'Hepsi' || x.v === hTur);
+  const F = tH.filter(x => (!hGrup || x.grup === hGrup) && (!hKonu || x.konu === hKonu));
+  let h = `<div class="noprint"><div class="chips" style="margin-bottom:8px">${[['Hepsi', 'Hepsi'], ['y', 'Yanlış'], ['k', 'Dikkat hatası'], ['b', 'Boş']].map(([k, a]) => `<button class="${hTur === k ? 'on' : ''}" data-a="htur" data-v="${k}">${a} (${k === 'Hepsi' ? H.length : H.filter(x => x.v === k).length})</button>`).join('')}</div>
+    <div class="row" style="margin-bottom:8px"><select data-hf="grup" style="flex:1;min-width:170px"><option value="">Bütün dersler</option>${KG_AD.map(g => { const c = tH.filter(x => x.grup === g).length; return `<option value="${esc(g)}" ${g === hGrup ? 'selected' : ''}>${esc(g)}${c ? ' (' + c + ')' : ''}</option>`; }).join('')}</select>
+    ${hGrup ? `<select data-hf="konu" style="flex:2;min-width:180px"><option value="">Bütün konular</option>${konuItems(hGrup).map(k => { const c = tH.filter(x => x.grup === hGrup && x.konu === k).length; return `<option value="${esc(k)}" ${k === hKonu ? 'selected' : ''}>${esc(k)}${c ? ' (' + c + ')' : ''}</option>`; }).join('')}</select>` : ''}
+    ${DILAY() ? '<button class="btn" data-a="hataekle">＋ Hata ekle</button>' : ''}</div>
+    <div class="row" style="margin-bottom:10px"><button class="btn" data-a="tumsec">☑ Görünenlerin hepsini seç (${F.length})</button>${odevSec.size ? '<button class="btn" data-a="secimtemizle">Seçimi temizle</button>' : ''}<button class="btn ok" data-a="odevolustur">📝 Ödev oluştur (${odevSec.size})</button><span class="sp"></span><button class="btn" data-a="pdfindir">📄 PDF indir</button><button class="btn pri" data-a="yazdir">🖨 Yazdır</button></div></div>
+    <div class="baski-baslik">Hatalarım · ${hTur === 'Hepsi' ? 'tümü' : TURAD[hTur]}${hGrup ? ' · ' + hGrup : ''}${hKonu ? ' · ' + hKonu : ''} · ${F.length} soru · ${new Date().toLocaleDateString('tr-TR')}</div>`;
+  if (!F.length) return h + `<div class="card mut">Bu seçimde hata yok.${DILAY() ? ' Denemelerde soruları işaretleyerek ya da "＋ Hata ekle" ile ekleyebilirsin.' : ''}</div>`;
+  F.forEach(x => {
+    const tk = T[x.k];
+    h += `<div class="pq" data-hk="${esc(x.k)}"><div class="pq-sol"><div class="row" style="margin-bottom:6px;gap:6px"><b>${esc(x.baslik)}</b><span class="chip ${x.v === 'b' ? 'y' : 'r'}" style="${x.v === 'k' ? 'background:#6b1f2a;color:#fff' : ''}">${TURAD[x.v]}</span><span class="mut sm">${esc(x.kaynak)}</span>${x.konu ? `<span class="chip b">${esc(x.konu)}</span>` : (DILAY() ? '<span class="chip noprint">konu seçilmedi</span>' : '')}${tk ? `<span class="chip noprint">tekrar: ${tk.d}✓ ${tk.y}✗</span>` : ''}<span class="sp"></span><label class="noprint sm row" style="gap:4px" data-nohq="1"><input type="checkbox" data-odsec="${esc(x.k)}" ${odevSec.has(x.k) ? 'checked' : ''}> ödeve ekle</label></div>
+      ${x.s.f ? `<div class="soru">${guvenli(x.s.f)}</div>` : x.s.img ? `<div class="soru"><img src="${x.s.img}"></div>` : `<div class="mut sm" style="padding:10px;border:1px dashed var(--line);border-radius:8px">Soru görseli yok${DILAY() ? ' — dokun, fotoğraf ekle' : ''}</div>`}
       ${x.s.not ? `<div class="sm" style="margin-top:6px"><b>${KOC() ? 'Dilay' : 'Notum'}:</b> ${esc(x.s.not)}</div>` : ''}${x.kn && x.kn.not ? `<div class="sm" style="margin-top:4px;color:var(--blue)"><b>${KOC() ? 'Senin notun' : 'Koç'}:</b> ${esc(x.kn.not)}</div>` : ''}</div>
       <div class="pq-bos"><span>Tekrar çöz</span></div></div>`;
   });
   return h;
 }
-async function denemeEkle(sAy, sWi) {
+// elle hata ekle / duzenle (hangi denemeden oldugu sadece Dilay'da gorunur)
+function hataDuzenle(id) {
+  const x = id ? Object.assign({}, B.get('hata', id)) : { tur: 'y', grup: hGrup, konu: hKonu }, k = id ? 'h|' + id : null, ro = !DILAY();
+  const bx = $('#mbox2'); bx.onclick = null; bx.classList.remove('dar');
+  bx.innerHTML = `<div class="mh"><b style="font-size:16px">${id ? (ro ? 'Soru' : 'Hatayı düzenle') : 'Hata ekle'}</b><span class="sp"></span><button class="btn" id="hxk">✕</button></div>
+    ${ro ? '' : `<div class="mut sm" style="margin:8px 0 4px">Hangi denemeden / kaynaktan? <span style="opacity:.7">(sadece sen görürsün)</span></div><input type="text" id="hxs" value="${esc(x.kaynak || '')}" placeholder="ör. Limit TYT 2 · 12. soru">`}
+    <div class="mut sm" style="margin:10px 0 4px">Hata türü</div><div class="chips" style="margin:0">${['y', 'k', 'b'].map(v => `<button class="${x.tur === v ? 'on' : ''}" data-hxt="${v}" ${ro ? 'disabled' : ''}>${TURAD[v]}</button>`).join('')}</div>
+    <div class="mut sm" style="margin:10px 0 4px">Ders ve konu</div><div class="row">${konuSec('hx', x.grup || '', x.konu || '', ro)}</div>
+    ${x.img ? `<div class="soru" style="margin-top:10px"><img src="${x.img}"></div>` : ''}
+    ${ro ? '' : `<label class="btn sm" style="margin-top:10px;display:inline-block">📷 ${x.img ? 'Fotoğrafı değiştir' : 'Soru fotoğrafı ekle'}<input type="file" id="hxi" accept="image/*" hidden></label>`}
+    <div class="mut sm" style="margin:10px 0 4px">${KOC() ? 'Dilay\'ın notu' : 'Notun'}</div><textarea id="hxn" ${ro ? 'readonly' : ''} style="min-height:70px">${esc(x.not || '')}</textarea>
+    ${id ? `<div class="mut sm" style="margin:10px 0 4px;color:var(--blue)">${KOC() ? 'Senin notun' : 'Koçun notu'}</div><textarea id="hxkn" ${KOC() ? '' : 'readonly'} style="min-height:56px">${esc((B.get('sorunot', k) || {}).not || '')}</textarea>` : ''}
+    <div class="row" style="margin-top:12px">${id && !ro ? '<button class="btn no" id="hxsil">🗑 Sil</button>' : ''}<span class="sp"></span><button class="btn ok" id="hxt">Kaydet</button></div>`;
+  $('#modal2').classList.add('on');
+  bx.querySelectorAll('[data-hxt]').forEach(b => b.onclick = () => { x.tur = b.dataset.hxt; bx.querySelectorAll('[data-hxt]').forEach(c => c.classList.toggle('on', c === b)); });
+  const fi = $('#hxi'); if (fi) fi.onchange = () => { if (fi.files[0]) resim(fi.files[0], 1000, .78, u => { x.img = u; toast('Fotoğraf eklendi, Kaydet\'e bas.'); }); };
+  $('#hxk').onclick = () => $('#modal2').classList.remove('on');
+  const sil = $('#hxsil'); if (sil) sil.onclick = async () => { if (!await onayla('Bu hata silinsin mi?')) return; B.yaz([{ s: 'hata', k: id, v: Object.assign(x, { sil: true }) }]); ciz(); };
+  $('#hxt').onclick = () => {
+    if (KOC()) { if (k) B.yaz([{ s: 'sorunot', k, v: { not: $('#hxkn').value } }]); }
+    else { Object.assign(x, { kaynak: $('#hxs').value.trim(), grup: bx.querySelector('[data-kg="hx"]').value, konu: bx.querySelector('[data-kk="hx"]').value, not: $('#hxn').value }); B.yaz([{ s: 'hata', k: id || 'h' + Date.now().toString(36), v: x }]); }
+    $('#modal2').classList.remove('on'); toast('Kaydedildi.'); ciz();
+  };
+}
+function hataAc(k) {
+  if (k.startsWith('h|')) return hataDuzenle(k.slice(2));
+  const p = k.split('|'), q = +p.pop(), a = p.pop(), id = p.join('|'), r = denemeler().find(x => x.id === id), m = (((r || {}).alan || {})[a] || {}).m || {};
+  soruAc(id, a, q, m[q]);
+}async function denemeEkle(sAy, sWi) {
   const n = new Date(), mAd = sAy || AYU[n.getMonth()], m = DD.months.find(x => x.name === mAd) || DD.months[0];
   const bx = $('#mbox2'); bx.onclick = null; bx.classList.add('dar');
   bx.innerHTML = `<h2>Deneme ekle</h2>
@@ -1025,19 +1081,24 @@ async function bildirimAc() {
 }
 
 /* ====== NOTLAR defteri ====== */
-const NDERS = ['Türkçe', 'Matematik', 'Geometri', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Din', 'Felsefe'];
-let nDers = 'Coğrafya';
+const NDERS = ['Türkçe', 'Matematik', 'Geometri', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Felsefe', 'Din', 'Edebiyat'];
+// tek not listesi: ders ve konuya gore suzulur (ayri defter yok)
+let nDers = '', nKonu = '';
 const notlar = () => Object.entries(B.hepsi('not')).filter(([k, v]) => v && !v.sil).map(([id, v]) => Object.assign({ id }, v));
+const dersKonulari = d => [...new Set(KG.filter(g => g.t.endsWith(' ' + d)).flatMap(g => g.items))];
 function cizNotlar() {
-  const L = notlar(), D2 = L.filter(n => n.ders === nDers);
-  const konular = [...new Set(D2.map(n => n.konu || 'Genel'))];
-  let h = `<div class="row noprint" style="margin-bottom:10px"><div class="chips" style="margin:0">${NDERS.map(d => { const c = L.filter(n => n.ders === d).length; return `<button class="${d === nDers ? 'on' : ''}" data-a="nders" data-v="${d}">${d}${c ? ' (' + c + ')' : ''}</button>`; }).join('')}</div><span class="sp"></span>
+  const L = notlar(), D2 = L.filter(n => (!nDers || n.ders === nDers) && (!nKonu || (n.konu || '') === nKonu));
+  const kon = nDers ? [...new Set([...dersKonulari(nDers), ...L.filter(n => n.ders === nDers && n.konu).map(n => n.konu)])] : [];
+  let h = `<div class="row noprint" style="margin-bottom:10px"><select data-nf="ders" style="flex:1;min-width:150px"><option value="">Bütün dersler (${L.length})</option>${NDERS.map(d => { const c = L.filter(n => n.ders === d).length; return `<option value="${d}" ${d === nDers ? 'selected' : ''}>${d}${c ? ' (' + c + ')' : ''}</option>`; }).join('')}</select>
+    ${nDers ? `<select data-nf="konu" style="flex:2;min-width:180px"><option value="">Bütün konular</option>${kon.map(k => { const c = L.filter(n => n.ders === nDers && n.konu === k).length; return `<option value="${esc(k)}" ${k === nKonu ? 'selected' : ''}>${esc(k)}${c ? ' (' + c + ')' : ''}</option>`; }).join('')}</select>` : ''}
     ${DILAY() ? '<button class="btn pri" data-a="notekle">+ Not ekle</button>' : ''}<button class="btn" data-a="pdfindir">📄 PDF indir</button><button class="btn" data-a="yazdir">🖨 Yazdır</button></div>
-    <div class="baski-baslik">${nDers} notları</div>`;
-  if (!D2.length) return h + `<div class="card mut">${nDers} için henüz not yok.${DILAY() ? ' "+ Not ekle" ile ekleyebilirsin (fotoğraf da olur).' : ''}</div>`;
-  konular.forEach(k => {
-    h += `<h3 style="margin:16px 0 8px">${esc(k)}</h3>`;
-    D2.filter(n => (n.konu || 'Genel') === k).forEach(n => {
+    <div class="baski-baslik">Notlarım${nDers ? ' · ' + nDers : ''}${nKonu ? ' · ' + nKonu : ''}</div>`;
+  if (!D2.length) return h + `<div class="card mut">Bu seçimde not yok.${DILAY() ? ' "+ Not ekle" ile ekleyebilirsin (fotoğraf da olur).' : ''}</div>`;
+  const sira = [...new Set(D2.map(n => n.ders + '||' + (n.konu || 'Genel')))];
+  sira.forEach(s => {
+    const [d, k] = s.split('||');
+    h += `<h3 style="margin:16px 0 8px">${esc(d)} · ${esc(k)}</h3>`;
+    D2.filter(n => n.ders === d && (n.konu || 'Genel') === k).forEach(n => {
       h += `<div class="card notk"><div class="row"><b style="font-size:15px">${esc(n.baslik || 'Not')}</b><span class="sp"></span>${DILAY() ? `<button class="btn sm noprint" data-nduz="${esc(n.id)}">✏</button><button class="btn sm no noprint" data-nsil="${esc(n.id)}">🗑</button>` : ''}</div>
         ${n.kaynak ? `<div class="mut sm">${esc(n.kaynak)}</div>` : ''}${n.metin ? `<div style="white-space:pre-wrap;margin-top:8px;line-height:1.55">${esc(n.metin)}</div>` : ''}${n.img ? `<img src="${n.img}" style="max-width:100%;border-radius:8px;margin-top:8px;background:#fff">` : ''}</div>`;
     });
@@ -1045,23 +1106,24 @@ function cizNotlar() {
   return h;
 }
 async function notDuzenle(id) {
-  const n = id ? Object.assign({}, B.get('not', id)) : { ders: nDers, konu: '', baslik: '', metin: '' };
+  const n = id ? Object.assign({}, B.get('not', id)) : { ders: nDers || 'Türkçe', konu: nKonu, baslik: '', metin: '' };
+  const konSec = d => [...new Set([...(n.konu && n.ders === d ? [n.konu] : []), ...dersKonulari(d)])].map(k => `<option ${k === n.konu ? 'selected' : ''}>${esc(k)}</option>`).join('');
   const bx = $('#mbox2'); bx.onclick = null; bx.classList.remove('dar');
   bx.innerHTML = `<h2>${id ? 'Notu düzenle' : 'Not ekle'}</h2>
-    <div class="row" style="margin-top:10px"><select id="nd" style="flex:1">${NDERS.map(d => `<option ${d === n.ders ? 'selected' : ''}>${d}</option>`).join('')}</select><input type="text" id="nk" placeholder="Konu (ör. İklim Bilgisi)" value="${esc(n.konu || '')}" style="flex:2"></div>
+    <div class="row" style="margin-top:10px"><select id="nd" style="flex:1">${NDERS.map(d => `<option ${d === n.ders ? 'selected' : ''}>${d}</option>`).join('')}</select><select id="nk" style="flex:2"><option value="">Konu seç</option>${konSec(n.ders)}</select></div>
     <input type="text" id="nb" placeholder="Başlık" value="${esc(n.baslik || '')}" style="margin-top:8px">
     <textarea id="nm" placeholder="Notun…" style="margin-top:8px;min-height:160px">${esc(n.metin || '')}</textarea>
     ${n.img ? `<img src="${n.img}" style="max-width:100%;max-height:200px;margin-top:8px;border-radius:8px">` : ''}
     <div class="row" style="margin-top:10px"><label class="btn sm">📷 ${n.img ? 'Fotoğrafı değiştir' : 'Fotoğraf ekle'}<input type="file" id="ni" accept="image/*" hidden></label><span class="sp"></span><button class="btn" id="nv">Vazgeç</button><button class="btn ok" id="nt">Kaydet</button></div>`;
   $('#modal2').classList.add('on');
+  $('#nd').onchange = () => { n.konu = ''; $('#nk').innerHTML = '<option value="">Konu seç</option>' + konSec($('#nd').value); };
   $('#ni').onchange = () => { const f = $('#ni').files[0]; if (f) resim(f, 1100, .78, u => { n.img = u; toast('Fotoğraf eklendi, Kaydet\'e bas.'); }); };
   $('#nv').onclick = () => $('#modal2').classList.remove('on');
   $('#nt').onclick = () => {
-    Object.assign(n, { ders: $('#nd').value, konu: $('#nk').value.trim(), baslik: $('#nb').value.trim() || 'Not', metin: $('#nm').value });
-    B.yaz([{ s: 'not', k: id || 'n' + Date.now().toString(36), v: n }]); nDers = n.ders; $('#modal2').classList.remove('on'); ciz();
+    Object.assign(n, { ders: $('#nd').value, konu: $('#nk').value, baslik: $('#nb').value.trim() || 'Not', metin: $('#nm').value });
+    B.yaz([{ s: 'not', k: id || 'n' + Date.now().toString(36), v: n }]); $('#modal2').classList.remove('on'); ciz();
   };
-}
-let eskiSOnbellek = null;
+}let eskiSOnbellek = null;
 async function eskiS() { if (eskiSOnbellek) return eskiSOnbellek; let S = null; const ham = await idbEski(); if (ham) { try { S = JSON.parse(ham); } catch (e) { } } if (!S) { try { const l = localStorage.getItem('yks27'); if (l) S = JSON.parse(l); } catch (e) { } } return eskiSOnbellek = S || {}; }
 async function notlarAktar() {
   if (!DILAY() || localStorage.getItem(AK('dt_not_aktarildi')) || Object.keys(B.hepsi('not')).length) return 0;
@@ -1112,9 +1174,19 @@ async function odevOlustur() {
   const ad = await adSor('Ödev oluştur', `${odevSec.size} soruluk test. Adı:`, 'Hata tekrarı ' + new Date().toLocaleDateString('tr-TR'), []); if (!ad) return;
   const id = 'o' + Date.now().toString(36);
   await B.yaz([{ s: 'odev', k: id, v: { baslik: ad, sorular: [...odevSec], olusturan: ROL, olusturma: new Date().toISOString(), cozum: {} } }]);
-  odevSec.clear(); dSek = 'odev'; acikOdev = id; ciz(); toast('Ödev oluşturuldu' + (ROL === 'koc' ? ', Dilay görecek.' : '.'));
+  odevSec.clear(); dSek = 'odev'; acikOdev = id; ciz();
+  // hatirlatma: odevi bir pomodoroya eklemeyi unutma
+  const bx = $('#mbox2'); bx.onclick = null; bx.classList.add('dar');
+  bx.innerHTML = `<h2>📝 Ödev oluşturuldu</h2><p style="font-size:15px;line-height:1.5"><b>${esc(ad)}</b> hazır.</p><div class="card" style="border-color:var(--gold);background:rgba(255,205,90,.08)"><b>⚠ Pomodoroya eklemeyi unutma!</b><div class="mut sm" style="margin-top:4px">Ödevin çözülmesi için haftalık plandaki bir pomodoroya eklenmesi gerekiyor.</div></div><div class="row" style="margin-top:14px"><button class="btn" id="odsonra">Sonra</button><span class="sp"></span><button class="btn pri" id="odsimdi">📌 Şimdi pomodoroya ekle</button></div>`;
+  $('#modal2').classList.add('on');
+  $('#odsonra').onclick = () => $('#modal2').classList.remove('on');
+  $('#odsimdi').onclick = () => { $('#modal2').classList.remove('on'); odevPlana(id); };
 }
+const odevMetni = od => '📝 Ödev: ' + od.baslik;
+function odevPlanli(od) { const m = odevMetni(od); return Object.values(P()).some(v => v && String(v).split('\n').some(x => x.split('|').slice(2).join('|').trim() === m)); }
+function odevPlana(id) { const od = B.get('odev', id); if (!od) return; atanacak = odevMetni(od); location.hash = '#plan'; ciz(); toast('Şimdi ödevin yapılacağı pomodoroya dokun.'); }
 function soruBilgi(k) {
+  if (k.startsWith('h|')) { const x = B.get('hata', k.slice(2)) || {}; return { k, a: x.grup || 'Soru', q: '', baslik: (x.grup || 'Soru') + (x.konu ? ' · ' + x.konu : ''), r: { ad: DILAY() ? (x.kaynak || 'Kendi eklediğim soru') : 'Eklenen soru' }, s: { img: x.img, not: x.not }, v: x.tur }; }
   const p = k.split('|'), q = +p.pop(), a = p.pop(), id = p.join('|'), r = denemeler().find(x => x.id === id) || { ad: id };
   return { k, id, a, q, r, s: B.get('soru', k) || {}, v: (((r.alan || {})[a] || {}).m || {})[q] };
 }
@@ -1127,17 +1199,17 @@ function cizOdevler() {
       <div class="baski-baslik">${esc(od.baslik)} · ${od.sorular.length} soru</div>`;
     od.sorular.forEach((k, i) => {
       const x = soruBilgi(k), t = T[k] || { d: 0, y: 0 };
-      h += `<div class="pq"><div class="pq-sol"><div class="row" style="margin-bottom:6px"><b>${i + 1}. ${esc(x.a)} ${x.q}. soru</b><span class="mut sm">${esc(x.r.ad)}</span><span class="sp"></span><span class="mut sm noprint">tekrar: ${t.d}✓ ${t.y}✗</span></div>
+      h += `<div class="pq"><div class="pq-sol"><div class="row" style="margin-bottom:6px"><b>${i + 1}. ${esc(x.baslik || (x.a + ' ' + x.q + '. soru'))}</b><span class="mut sm">${esc(x.r.ad)}</span><span class="sp"></span><span class="mut sm noprint">tekrar: ${t.d}✓ ${t.y}✗</span></div>
         ${x.s.f ? `<div class="soru">${guvenli(x.s.f)}</div>` : x.s.img ? `<div class="soru"><img src="${x.s.img}"></div>` : `<div class="mut sm" style="padding:10px;border:1px dashed var(--line);border-radius:8px">Soru görseli yok — ${esc(x.r.ad)}, ${esc(x.a)} ${x.q}. soru</div>`}
         <div class="row noprint" style="margin-top:8px">${DILAY() ? `<button class="btn sm ${c[k] === 'd' ? 'ok' : ''}" data-oc="d" data-ok="${esc(k)}">✓ Doğru yaptım</button><button class="btn sm ${c[k] === 'y' ? 'no' : ''}" data-oc="y" data-ok="${esc(k)}">✗ Yanlış yaptım</button>` : (c[k] ? `<span class="chip ${c[k] === 'd' ? 'ok' : 'r'}">${c[k] === 'd' ? 'Doğru yaptı' : 'Yanlış yaptı'}</span>` : '<span class="chip">henüz çözmedi</span>')}
         ${x.s.b ? `<details style="margin-left:auto"><summary class="sm" style="cursor:pointer;color:var(--blue)">Çözüm</summary><div class="cozum">${guvenli(x.s.b)}</div></details>` : ''}</div></div><div class="pq-bos"><span>Çözüm alanı</span></div></div>`;
     });
     return h;
   }
-  let h = `<div class="mut sm" style="margin-bottom:10px">Ödev oluşturmak için Hatalar ya da Dikkat hataları sekmesinde soruları işaretleyip "Ödev oluştur"a bas. Dilay her soruyu "doğru/yanlış yaptım" diye işaretler; her sorunun kaç kez doğru/yanlış yapıldığı Hatalar listesinde görünür.</div>`;
+  let h = `<div class="mut sm" style="margin-bottom:10px">Ödev oluşturmak için Hatalarım sekmesinde soruları işaretleyip (ya da süzüp "Görünenlerin hepsini seç" deyip) "Ödev oluştur"a bas. Dilay her soruyu "doğru/yanlış yaptım" diye işaretler; her sorunun kaç kez doğru/yanlış yapıldığı Hatalar listesinde görünür.</div>`;
   if (!L.length) return h + '<div class="card mut">Henüz ödev yok.</div>';
   L.forEach(od => { const c = od.cozum || {}, n = Object.keys(c).length, dn = Object.values(c).filter(v => v === 'd').length;
-    h += `<div class="card row" style="cursor:pointer" data-odac="${esc(od.id)}"><div style="flex:1"><b>${esc(od.baslik)}</b><div class="mut sm">${od.sorular.length} soru · ${KOC() ? (od.olusturan === 'koc' ? 'senin verdiğin' : 'Dilay oluşturdu') : (od.olusturan === 'koc' ? 'koçun verdi' : 'kendin oluşturdun')} · ${new Date(od.olusturma).toLocaleDateString('tr-TR')}</div></div><span class="chip ${n === od.sorular.length ? 'ok' : 'y'}">${n}/${od.sorular.length} çözüldü · ${dn} doğru</span></div>`; });
+    h += `<div class="card row" style="cursor:pointer" data-odac="${esc(od.id)}"><div style="flex:1"><b>${esc(od.baslik)}</b><div class="mut sm">${od.sorular.length} soru · ${KOC() ? (od.olusturan === 'koc' ? 'senin verdiğin' : 'Dilay oluşturdu') : (od.olusturan === 'koc' ? 'koçun verdi' : 'kendin oluşturdun')} · ${new Date(od.olusturma).toLocaleDateString('tr-TR')}</div></div><span class="chip ${n === od.sorular.length ? 'ok' : 'y'}">${n}/${od.sorular.length} çözüldü · ${dn} doğru</span>${odevPlanli(od) ? '<span class="chip ok">📌 planda</span>' : `<button class="btn sm" style="border-color:var(--gold);color:var(--gold)" data-odplan="${esc(od.id)}">⚠ Pomodoroya ekle</button>`}</div>`; });
   return h;
 }
 
@@ -1170,12 +1242,14 @@ function guvenli(html) {
 }
 function soruAc(id, a, q, durum) {
   const k = soruKey(id, a, q), s = B.get('soru', k) || {}, ro = !DILAY();
+  const rr = denemeler().find(x => x.id === id) || { t: 'TYT' }, al = (alanlar(rr).find(z => z[0] === a) || [a, 0, [[a, 1, 999]]])[2], drs = (al.find(z => q >= z[1] && q <= z[2]) || [a])[0], sg = s.grup || varsayilanGrup(rr, drs);
   const bx = $('#mbox2'); bx.classList.remove('dar');
   bx.innerHTML = `<div class="mh"><b style="font-size:16px">${esc(a)} · ${q}. soru</b>${durum === 'y' ? '<span class="chip r">Yanlış</span>' : durum === 'k' ? '<span class="chip" style="background:#6b1f2a;color:#fff">Dikkat hatası</span>' : durum === 'b' ? '<span class="chip y">Boş</span>' : '<span class="chip">Yapamadığım soru</span>'}<span class="sp"></span><button class="btn" data-s="kapat">✕</button></div>
     ${s.f ? `<div class="soru">${guvenli(s.f)}</div>` : ''}
     ${s.img ? `<div class="soru"><img src="${s.img}"></div>` : ''}
     ${!s.f && !s.img ? `<div class="mut" style="margin:8px 0">Bu sorunun görseli yok.${ro ? '' : ' Fotoğrafını çekip ekleyebilirsin.'}</div>` : ''}
     ${s.b ? `<details class="cozum" ${ro ? '' : ''}><summary style="cursor:pointer;font-weight:700;color:var(--blue)">Çözüm / cevap</summary><div style="margin-top:8px">${guvenli(s.b)}</div></details>` : ''}
+    <div class="mut sm" style="margin:10px 0 4px">Ders ve konu</div><div class="row">${konuSec('sq', sg, s.konu || '', ro)}</div>
     <div class="mut sm" style="margin:10px 0 4px">Dilay'ın notu ${ro ? '' : '(neden yapamadım, ne öğrendim)'}</div>
     <textarea id="snot" ${ro ? 'readonly' : ''} placeholder="${ro ? '—' : 'Notun…'}" style="min-height:70px">${esc(s.not || '')}</textarea>
     <div class="mut sm" style="margin:10px 0 4px;color:var(--blue)">${KOC() ? 'Senin notun' : 'Koçun notu'}</div>
@@ -1187,7 +1261,7 @@ function soruAc(id, a, q, durum) {
     if (t.dataset.s === 'kapat') { soruKapat(); return; }
     if (t.dataset.s === 'kaydet') {
       if (KOC()) B.yaz([{ s: 'sorunot', k, v: { not: $('#sknot').value } }]);
-      else B.yaz([{ s: 'soru', k, v: Object.assign({}, B.get('soru', k) || {}, { not: $('#snot').value }) }]);
+      else B.yaz([{ s: 'soru', k, v: Object.assign({}, B.get('soru', k) || {}, { not: $('#snot').value, grup: bx.querySelector('[data-kg="sq"]').value, konu: bx.querySelector('[data-kk="sq"]').value }) }]);
       toast('Kaydedildi.'); soruKapat(); if (tab === 'deneme' && dSek !== 'liste') ciz();
     }
   };

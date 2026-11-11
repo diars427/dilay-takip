@@ -1,5 +1,7 @@
 {
+  "id": "./",
   "name": "YKS Dilay Takip",
+  "related_applications": [{ "platform": "webapp", "url": "https://diars427.github.io/dilay-takip/manifest.webmanifest" }],
   "short_name": "Dilay Takip",
   "description": "Haftalık plan, kaynak takibi ve denemeler",
   "lang": "tr",

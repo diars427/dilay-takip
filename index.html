@@ -174,7 +174,7 @@ main.oniz::before{content:'👁 Önizleme: paylaştığın kişiler uygulamayı 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="bulut.js"></script>
-<script src="kaynak-veri.js?v=9"></script>
+<script src="kaynak-veri.js?v=10"></script>
 <script src="deneme-veri.js"></script>
 <script>
 'use strict';
@@ -216,10 +216,24 @@ async function basla() {
 }
 // kullanici adi -> giris adresi (e-postasi olmayanlar icin; kimseye mail gitmez)
 const kullaniciEposta = s => { s = String(s || '').trim().toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ı/g, 'i').replace(/\s+/g, ''); return s.includes('@') ? s : s + '@' + (AYAR.KULLANICI_ALANI || 'dilaytakip.local'); };
-function cizGiris(hata) {
+// tarayicida acilinca: once sadece "Uygulamayi ekle"; giris uygulamanin icinde
+let tarayicidaDevam = false; try { tarayicidaDevam = localStorage.getItem('dt_tarayici') === '1'; } catch (e) { }
+let sonGirisHata = '';
+async function cizEkle(durum) {
   $('#rolc').textContent = ''; $('#ucd').textContent = '';
-  $('#app').innerHTML = `<div class="giris"><div class="card"><h2>YKS Dilay Takip</h2>
-    ${kuruluMu() ? '<p class="mut">Haftalık plan, kaynak takibi ve denemeler. Giriş yap:</p>' : '<button class="btn ok" data-indir="1" style="width:100%;padding:14px;font-size:16px;margin-top:6px">📲 Uygulamayı ekle</button><p class="mut" style="margin:18px 0 0">Sonra giriş yap:</p>'}
+  if (!durum) { try { const L = navigator.getInstalledRelatedApps ? await navigator.getInstalledRelatedApps() : []; if (L.length) durum = 'ekli'; } catch (e) { } }
+  const mobil = iPhoneMu() || /Android|Mobile/.test(navigator.userAgent), simge = mobil ? 'Ana ekrandaki' : 'Masaüstündeki';
+  const ic = durum === 'eklendi' || durum === 'ekli'
+    ? `<div style="font-size:48px;margin:6px 0">✅</div><h3 style="margin:0 0 8px">${durum === 'eklendi' ? 'Uygulama eklendi' : 'Uygulama zaten ekli'}</h3><p class="mut" style="margin:0">${simge} <b>Dilay Takip</b> simgesine ${mobil ? 'dokun' : 'tıkla'}, orada giriş yap.</p>`
+    : `<button class="btn ok" data-indir="1" style="width:100%;padding:16px;font-size:17px;margin-top:6px">📲 Uygulamayı ekle</button>`;
+  $('#app').innerHTML = `<div class="giris"><div class="card" style="text-align:center"><h2>YKS Dilay Takip</h2>${ic}
+    <div style="margin-top:22px"><a href="#" id="tardev" class="mut sm" style="opacity:.6">tarayıcıda devam et</a></div></div></div>`;
+  $('#tardev').onclick = e => { e.preventDefault(); tarayicidaDevam = true; try { localStorage.setItem('dt_tarayici', '1'); } catch (x) { } cizGiris(sonGirisHata); };
+}
+function cizGiris(hata) {
+  if (!kuruluMu() && !tarayicidaDevam) { sonGirisHata = hata || ''; return cizEkle(); }
+  $('#rolc').textContent = ''; $('#ucd').textContent = '';
+  $('#app').innerHTML = `<div class="giris"><div class="card"><h2>YKS Dilay Takip</h2><p class="mut">Haftalık plan, kaynak takibi ve denemeler. Giriş yap:</p>
     <label>Kullanıcı adı</label><input type="text" id="ge" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="kullanıcı adın">
     <label>Şifre</label><input type="password" id="gp" autocomplete="current-password">
     <div style="color:var(--r2);margin-top:10px;min-height:18px" id="gh">${esc(hata || '')}</div>
@@ -1416,14 +1430,15 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 /* ====== Uygulamayi indir (Android / bilgisayar: gercek yukleme; iPhone: tarif) ====== */
 let yuklemeIstegi = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); yuklemeIstegi = e; });
-window.addEventListener('appinstalled', () => { yuklemeIstegi = null; toast('Uygulama yüklendi. Ana ekrandaki Dilay Takip simgesinden açabilirsin.'); });
+window.addEventListener('appinstalled', () => { yuklemeIstegi = null; if ($('#tardev')) return cizEkle('eklendi'); toast('Uygulama yüklendi. Ana ekrandaki Dilay Takip simgesinden açabilirsin.'); });
 function kuruluMu() { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true || GOMULU; }
 const iPhoneMu = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 async function indir() {
   // tarayici yukleme penceresini biraz gec hazirlayabilir: kisa bekle
   if (!yuklemeIstegi && !iPhoneMu()) for (let i = 0; i < 20 && !yuklemeIstegi; i++) await new Promise(r => setTimeout(r, 150));
   if (iPhoneMu() && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent)) return iphoneOk();
-  if (yuklemeIstegi) { yuklemeIstegi.prompt(); const s = await yuklemeIstegi.userChoice.catch(() => ({})); if (s.outcome === 'accepted') yuklemeIstegi = null; return; }
+  if (yuklemeIstegi) { yuklemeIstegi.prompt(); const s = await yuklemeIstegi.userChoice.catch(() => ({})); if (s.outcome === 'accepted') { yuklemeIstegi = null; if ($('#tardev')) cizEkle('eklendi'); } return; }
+  try { const L = navigator.getInstalledRelatedApps ? await navigator.getInstalledRelatedApps() : []; if (L.length) { if ($('#tardev')) cizEkle('ekli'); else toast('Uygulama zaten ekli; simgesinden açabilirsin.'); return; } } catch (e) { }
   const ios = iPhoneMu(), safari = ios && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
   const adim = ios ? (safari
     ? ['Ekranın altındaki <b>Paylaş</b> tuşuna bas (kutudan yukarı çıkan ok: <b>⬆</b>).', 'Açılan listeyi biraz aşağı kaydır, <b>Ana Ekrana Ekle</b>\'ye bas.', 'Sağ üstte <b>Ekle</b>\'ye bas.', 'Ana ekrandaki <b>Dilay Takip</b> simgesinden aç.']

@@ -1,0 +1,16 @@
+{
+  "name": "YKS Dilay Takip",
+  "short_name": "Dilay Takip",
+  "description": "Haftalık plan, kaynak takibi ve denemeler",
+  "lang": "tr",
+  "start_url": "./index.html#plan",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f1219",
+  "theme_color": "#151a2b",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

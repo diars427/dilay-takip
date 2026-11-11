@@ -223,7 +223,7 @@ function cizGiris(hata) {
     <label>Şifre</label><input type="password" id="gp" autocomplete="current-password">
     <div style="color:var(--r2);margin-top:10px;min-height:18px" id="gh">${esc(hata || '')}</div>
     <button class="btn pri" id="gb" style="width:100%;margin-top:8px;padding:12px">Giriş yap</button>
-    <p class="mut sm" style="margin-top:14px">Telefona kurmak için: iPhone'da Safari'de bu sayfayı aç → Paylaş (⬆) → <b>Ana Ekrana Ekle</b>. Android'de Chrome menüsü → <b>Uygulamayı yükle</b>.</p></div></div>`;
+    ${kuruluMu() ? '' : '<button class="btn" data-indir="1" style="width:100%;margin-top:12px;padding:12px">📲 Uygulamayı indir</button>'}</div></div>`;
   const git = async () => {
     $('#gb').disabled = true; $('#gh').textContent = '';
     const r = await B.giris(kullaniciEposta($('#ge').value), $('#gp').value);
@@ -252,6 +252,7 @@ B.on(n => {
 });
 const yaziyor = () => { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type !== 'checkbox')); };
 const anaMenu = e => menuAc([...(ROL === 'dilay' ? [{ h: 'Dilay' }] : []),
+...(kuruluMu() ? [] : [{ t: '📲 Uygulamayı indir', f: indir }]),
 { t: '🔄 Şimdi eşitle', f: () => B.cek().then(() => { ciz(); toast('Eşitlendi.'); }) },
 { t: '🔔 Akşam 20:45 bildirimini aç', f: bildirimAc },
 ...(B.TEST ? [{ t: 'Test: rolü ' + (ROL === 'koc' ? 'Dilay' : 'Koç') + ' yap', f: () => { localStorage.setItem('dt_test_rol', ROL === 'koc' ? 'dilay' : 'koc'); location.reload(); } }] : []),
@@ -1331,6 +1332,24 @@ function toast(msg, geri) {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('#modal2').classList.contains('on')) $('#modal2').classList.remove('on'); else if (PL) planKapat(); else if (DN) denemeKapat(); else if (acikKitap != null) { acikKitap = null; $('#modal').classList.remove('on'); } } });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
+/* ====== Uygulamayi indir (Android / bilgisayar: gercek yukleme; iPhone: tarif) ====== */
+let yuklemeIstegi = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); yuklemeIstegi = e; });
+window.addEventListener('appinstalled', () => { yuklemeIstegi = null; toast('Uygulama yüklendi. Ana ekrandaki Dilay Takip simgesinden açabilirsin.'); });
+function kuruluMu() { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true || GOMULU; }
+const iPhoneMu = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+async function indir() {
+  if (yuklemeIstegi) { yuklemeIstegi.prompt(); const s = await yuklemeIstegi.userChoice.catch(() => ({})); if (s.outcome === 'accepted') yuklemeIstegi = null; return; }
+  const ios = iPhoneMu(), safari = ios && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
+  const adim = ios ? (safari
+    ? ['Ekranın altındaki <b>Paylaş</b> tuşuna bas (kutudan yukarı çıkan ok: <b>⬆</b>).', 'Açılan listeyi biraz aşağı kaydır, <b>Ana Ekrana Ekle</b>\'ye bas.', 'Sağ üstte <b>Ekle</b>\'ye bas.', 'Ana ekrandaki <b>Dilay Takip</b> simgesinden aç.']
+    : ['Bu sayfayı <b>Safari</b> ile açman gerekiyor (iPhone\'da sadece Safari ana ekrana ekleyebilir).', 'Linki kopyala, Safari\'yi aç ve yapıştır.', 'Sonra Paylaş (⬆) → <b>Ana Ekrana Ekle</b> → <b>Ekle</b>.'])
+    : ['Chrome\'da sağ üstteki <b>⋮</b> menüsüne bas.', '<b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b>\'ye bas.', 'Ana ekrandaki <b>Dilay Takip</b> simgesinden aç.'];
+  const bx = $('#mbox2'); bx.onclick = null; bx.classList.add('dar');
+  bx.innerHTML = `<h2>📲 Uygulamayı yükle</h2><ol style="line-height:1.7;padding-left:20px;margin:12px 0">${adim.map(a => '<li>' + a + '</li>').join('')}</ol><div class="mut sm">Bir kere yapman yeterli; sonra uygulama simgesinden açılır.</div><div class="row" style="margin-top:14px"><span class="sp"></span><button class="btn ok" id="indtm">Tamam</button></div>`;
+  $('#modal2').classList.add('on'); $('#indtm').onclick = () => $('#modal2').classList.remove('on');
+}
+document.addEventListener('click', e => { if (e.target.closest('[data-indir]')) indir(); });
 basla();
 </script>
 </body></html>

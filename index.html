@@ -174,7 +174,7 @@ main.oniz::before{content:'👁 Önizleme: paylaştığın kişiler uygulamayı 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="bulut.js"></script>
-<script src="kaynak-veri.js?v=11"></script>
+<script src="kaynak-veri.js?v=12"></script>
 <script src="deneme-veri.js"></script>
 <script>
 'use strict';
@@ -1442,9 +1442,9 @@ async function indir() {
     : ['Bu sayfayı <b>Safari</b> ile açman gerekiyor (iPhone\'da sadece Safari ana ekrana ekleyebilir).', 'Linki kopyala, Safari\'yi aç ve yapıştır.', 'Sonra Paylaş (⬆) → <b>Ana Ekrana Ekle</b> → <b>Ekle</b>.'])
     : (/Android|Mobile/.test(navigator.userAgent)
       ? ['Chrome\'da sağ üstteki <b>⋮</b> menüsüne bas.', '<b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b>\'ye bas.', 'Ana ekrandaki <b>Dilay Takip</b> simgesinden aç.']
-      : ['Chrome\'da sağ üstteki <b>⋮</b> menüsüne bas.', '<b>Yayınla, kaydet ve paylaş</b> → <b>Sayfayı uygulama olarak yükle</b>\'ye bas.', 'Masaüstündeki <b>YKS Dilay Takip</b> simgesinden aç.']);
+      : ['Adres çubuğunun en sağındaki <b>yükle simgesine</b> (küçük ekran + ok) tıkla, sonra <b>Yükle</b>\'ye bas.', 'Simge yoksa: sağ üstteki <b>⋮</b> → <b>Yayınla, kaydet ve paylaş</b> → <b>Sayfayı uygulama olarak yükle</b>.', 'Masaüstündeki <b>YKS Dilay Takip</b> simgesinden aç.']);
   const bx = $('#mbox2'); bx.onclick = null; bx.classList.add('dar');
-  bx.innerHTML = `<h2>📲 Uygulamayı yükle</h2><ol style="line-height:1.7;padding-left:20px;margin:12px 0">${adim.map(a => '<li>' + a + '</li>').join('')}</ol><div class="mut sm">Bir kere yapman yeterli; sonra uygulama simgesinden açılır.</div><div class="row" style="margin-top:14px"><span class="sp"></span><button class="btn ok" id="indtm">Tamam</button></div>`;
+  bx.innerHTML = `<h2>📲 Uygulamayı yükle</h2><ol style="line-height:1.7;padding-left:20px;margin:12px 0">${adim.map(a => '<li>' + a + '</li>').join('')}</ol><div class="mut sm">Bir kere yapman yeterli; sonra uygulama simgesinden açılır.${ios ? '' : '<br>(Yükleme penceresi daha önce kapatıldıysa Chrome onu bir süre kendiliğinden açmıyor; o yüzden bu adımlar çıktı.)'}</div><div class="row" style="margin-top:14px"><span class="sp"></span><button class="btn ok" id="indtm">Tamam</button></div>`;
   $('#modal2').classList.add('on'); $('#indtm').onclick = () => $('#modal2').classList.remove('on');
 }
 // iPhone Safari: sitelerin kendi kendine ana ekrana eklemesine Apple izin vermiyor -> Paylas tusunu gosteren ok

@@ -174,7 +174,7 @@ main.oniz::before{content:'👁 Önizleme: paylaştığın kişiler uygulamayı 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="bulut.js"></script>
-<script src="kaynak-veri.js?v=8"></script>
+<script src="kaynak-veri.js?v=9"></script>
 <script src="deneme-veri.js"></script>
 <script>
 'use strict';
@@ -218,12 +218,12 @@ async function basla() {
 const kullaniciEposta = s => { s = String(s || '').trim().toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ı/g, 'i').replace(/\s+/g, ''); return s.includes('@') ? s : s + '@' + (AYAR.KULLANICI_ALANI || 'dilaytakip.local'); };
 function cizGiris(hata) {
   $('#rolc').textContent = ''; $('#ucd').textContent = '';
-  $('#app').innerHTML = `<div class="giris"><div class="card"><h2>YKS Dilay Takip</h2><p class="mut">Haftalık plan, kaynak takibi ve denemeler. Giriş yap:</p>
+  $('#app').innerHTML = `<div class="giris"><div class="card"><h2>YKS Dilay Takip</h2>
+    ${kuruluMu() ? '<p class="mut">Haftalık plan, kaynak takibi ve denemeler. Giriş yap:</p>' : '<button class="btn ok" data-indir="1" style="width:100%;padding:14px;font-size:16px;margin-top:6px">📲 Uygulamayı ekle</button><p class="mut" style="margin:18px 0 0">Sonra giriş yap:</p>'}
     <label>Kullanıcı adı</label><input type="text" id="ge" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="kullanıcı adın">
     <label>Şifre</label><input type="password" id="gp" autocomplete="current-password">
     <div style="color:var(--r2);margin-top:10px;min-height:18px" id="gh">${esc(hata || '')}</div>
-    <button class="btn pri" id="gb" style="width:100%;margin-top:8px;padding:12px">Giriş yap</button>
-    ${kuruluMu() ? '' : '<button class="btn" data-indir="1" style="width:100%;margin-top:12px;padding:12px">📲 Uygulamayı indir</button>'}</div></div>`;
+    <button class="btn pri" id="gb" style="width:100%;margin-top:8px;padding:12px">Giriş yap</button></div></div>`;
   const git = async () => {
     $('#gb').disabled = true; $('#gh').textContent = '';
     const r = await B.giris(kullaniciEposta($('#ge').value), $('#gp').value);
@@ -1420,15 +1420,30 @@ window.addEventListener('appinstalled', () => { yuklemeIstegi = null; toast('Uyg
 function kuruluMu() { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true || GOMULU; }
 const iPhoneMu = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 async function indir() {
+  // tarayici yukleme penceresini biraz gec hazirlayabilir: kisa bekle
+  if (!yuklemeIstegi && !iPhoneMu()) for (let i = 0; i < 20 && !yuklemeIstegi; i++) await new Promise(r => setTimeout(r, 150));
+  if (iPhoneMu() && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent)) return iphoneOk();
   if (yuklemeIstegi) { yuklemeIstegi.prompt(); const s = await yuklemeIstegi.userChoice.catch(() => ({})); if (s.outcome === 'accepted') yuklemeIstegi = null; return; }
   const ios = iPhoneMu(), safari = ios && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
   const adim = ios ? (safari
     ? ['Ekranın altındaki <b>Paylaş</b> tuşuna bas (kutudan yukarı çıkan ok: <b>⬆</b>).', 'Açılan listeyi biraz aşağı kaydır, <b>Ana Ekrana Ekle</b>\'ye bas.', 'Sağ üstte <b>Ekle</b>\'ye bas.', 'Ana ekrandaki <b>Dilay Takip</b> simgesinden aç.']
     : ['Bu sayfayı <b>Safari</b> ile açman gerekiyor (iPhone\'da sadece Safari ana ekrana ekleyebilir).', 'Linki kopyala, Safari\'yi aç ve yapıştır.', 'Sonra Paylaş (⬆) → <b>Ana Ekrana Ekle</b> → <b>Ekle</b>.'])
-    : ['Chrome\'da sağ üstteki <b>⋮</b> menüsüne bas.', '<b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b>\'ye bas.', 'Ana ekrandaki <b>Dilay Takip</b> simgesinden aç.'];
+    : (/Android|Mobile/.test(navigator.userAgent)
+      ? ['Chrome\'da sağ üstteki <b>⋮</b> menüsüne bas.', '<b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b>\'ye bas.', 'Ana ekrandaki <b>Dilay Takip</b> simgesinden aç.']
+      : ['Chrome\'da sağ üstteki <b>⋮</b> menüsüne bas.', '<b>Yayınla, kaydet ve paylaş</b> → <b>Sayfayı uygulama olarak yükle</b>\'ye bas.', 'Masaüstündeki <b>YKS Dilay Takip</b> simgesinden aç.']);
   const bx = $('#mbox2'); bx.onclick = null; bx.classList.add('dar');
   bx.innerHTML = `<h2>📲 Uygulamayı yükle</h2><ol style="line-height:1.7;padding-left:20px;margin:12px 0">${adim.map(a => '<li>' + a + '</li>').join('')}</ol><div class="mut sm">Bir kere yapman yeterli; sonra uygulama simgesinden açılır.</div><div class="row" style="margin-top:14px"><span class="sp"></span><button class="btn ok" id="indtm">Tamam</button></div>`;
   $('#modal2').classList.add('on'); $('#indtm').onclick = () => $('#modal2').classList.remove('on');
+}
+// iPhone Safari: sitelerin kendi kendine ana ekrana eklemesine Apple izin vermiyor -> Paylas tusunu gosteren ok
+function iphoneOk() {
+  const ipad = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(5,8,18,.88);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:' + (ipad ? 'flex-start' : 'flex-end') + ';padding:24px;text-align:center;font-size:18px;line-height:1.5';
+  const ok = `<div style="font-size:56px;line-height:1;animation:zipla 1s infinite">${ipad ? '⬆' : '⬇'}</div>`;
+  const yazi = `<div style="max-width:340px;margin:${ipad ? '8px 0 0' : '0 0 8px'}"><b>1.</b> ${ipad ? 'Yukarıdaki' : 'Aşağıdaki'} <b>Paylaş</b> tuşuna bas <span style="display:inline-block;border:2px solid #fff;border-radius:6px;padding:0 6px">⬆</span><br><b>2.</b> <b>Ana Ekrana Ekle</b>\'ye bas<br><b>3.</b> <b>Ekle</b>\'ye bas<div style="font-size:14px;opacity:.7;margin-top:10px">(kapatmak için dokun)</div></div>`;
+  d.innerHTML = '<style>@keyframes zipla{50%{transform:translateY(' + (ipad ? '-' : '') + '12px)}}</style>' + (ipad ? ok + yazi : yazi + ok);
+  d.onclick = () => d.remove(); document.body.appendChild(d);
 }
 document.addEventListener('click', e => { if (e.target.closest('[data-indir]')) indir(); });
 basla();

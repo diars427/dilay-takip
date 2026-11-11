@@ -1,5 +1,5 @@
 // YKS Dilay Takip - uygulama dosyalarini telefona kaydeder (internetsiz de acilsin)
-const SURUM = 'dilay-takip-v6';
+const SURUM = 'dilay-takip-v7';
 // aksam bildirimi
 self.addEventListener('push', e => {
   let d = {}; try { d = e.data.json(); } catch (x) { d = { metin: e.data ? e.data.text() : '' }; }

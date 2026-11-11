@@ -317,7 +317,11 @@ const planOzet = key => planSatir(key).filter(r => r.ad.trim());
 /* ====== kaynak verisi ====== */
 const KB = window.KD.books;
 KB.forEach(b => { b.rows.forEach((r, i) => { const nx = b.rows[i + 1]; r.sec = !!(r.b && nx && !nx.b); r.child = false; }); let ic = false; b.rows.forEach(r => { if (r.sec) ic = true; else if (r.b) ic = false; else r.child = ic; }); });
-const kS = n => B.get('kaynak', String(n)) || {};
+// icindekiler genisletilen kitaplarda (b.v, b.eski) isaretler yeni anahtarda; eski isaretler yeni satirlara tasinir
+const KBN = {}; KB.forEach(b => KBN[b.n] = b);
+const kK = n => { const b = KBN[n]; return b && b.v ? n + '@' + b.v : String(n); };
+const kTasi = (b, s) => { const o = {}; Object.keys(s).forEach(i => (b.eski[i] || []).forEach(j => o[j] = s[i])); return o; };
+const kS = n => { const b = KBN[n]; if (b && b.v) { const y = B.get('kaynak', kK(n)); if (y) return y; const e = B.get('kaynak', String(n)); return e ? kTasi(b, e) : {}; } return B.get('kaynak', String(n)) || {}; };
 function kval(b, i) { const s = kS(b.n); if (s[i] !== undefined) return s[i]; return b.rows[i].s == 'Çözülü' ? 1 : 0; }
 function ktouched(b) { const s = kS(b.n); return Object.keys(s).some(k => s[k] !== (b.rows[k] && b.rows[k].s == 'Çözülü' ? 1 : 0)); }
 const kleaf = b => b.rows.map((r, i) => [r, i]).filter(x => !x[0].sec);
@@ -327,12 +331,15 @@ const KCC = { 'Tamamlandı': '#2e9e5b', 'Kısmi': '#c99700', 'Çok az': '#e8710a
 const KSUBS = ['Matematik', 'Geometri', 'Fizik', 'Kimya', 'Biyoloji', 'Türkçe', 'Sosyal'];
 const KSUBL = { Sosyal: 'Sosyal / Deneme' };
 // plan satiri metni <-> kaynak testi
-const testAd = (b, i) => b.name + ' - ' + b.rows[i].n;
+// her test benzersiz: "Kitap - Ünite - Test"
+const testAd = (b, i) => b.name + ' - ' + (b.rows[i].a || b.rows[i].n);
 const TESTMAP = {}; KB.forEach(b => b.rows.forEach((r, i) => { if (!r.sec) TESTMAP[testAd(b, i)] = [b.n, i]; }));
+// eski plan yazilari (unite adi olmadan) sadece tek bir teste denk geliyorsa eslesir
+(() => { const say = {}, ilk = {}; KB.forEach(b => { if (b.v) return; b.rows.forEach((r, i) => { if (r.sec || !r.a) return; const k = b.name + ' - ' + r.n; say[k] = (say[k] || 0) + 1; ilk[k] = [b.n, i]; }); }); Object.keys(say).forEach(k => { if (say[k] === 1 && !TESTMAP[k]) TESTMAP[k] = ilk[k]; }); })();
 function kaynakTik(metin, v) {
   const m = TESTMAP[(metin || '').trim()]; if (!m || !DILAY()) return false;
   const b = KB.find(x => x.n === m[0]); if (kval(b, m[1]) === v) return false;
-  const s = Object.assign({}, kS(m[0])); s[m[1]] = v; B.yaz([{ s: 'kaynak', k: String(m[0]), v: s }]); return true;
+  const s = Object.assign({}, kS(m[0])); s[m[1]] = v; B.yaz([{ s: 'kaynak', k: kK(m[0]), v: s }]); return true;
 }
 function planliTestler() { const o = {}; Object.entries(P()).forEach(([k, v]) => { if (!/^\d{4}-/.test(k) || !v) return; String(v).split('\n').forEach(x => { const a = x.split('|').slice(2).join('|').trim(); if (TESTMAP[a]) o[a] = k; }); }); return o; }
 
@@ -527,7 +534,7 @@ function kaynakPanelCiz() {
     if (r.sec) { rows += `<div class="kr bas">${esc(r.n)}</div>`; return; }
     const v = kval(b, i), ad = testAd(b, i), p = pl[ad];
     if (kpF === 'kalan' && v) return;
-    rows += `<div class="kr ${atanacak === ad ? 'sec' : ''}" data-t="${esc(ad)}"><span class="ck ${v ? 'on' : ''}">${v ? '✓' : ''}</span><div class="n">${esc(r.n)}${r.s === 'Kısmen' && !v ? ' <span class="chip y">yarım</span>' : ''}${p ? ` <span class="chip b">📅 ${tarihK(parseD(p.split('|')[0]))} #${p.split('|')[1]}</span>` : ''}</div><div class="p">${esc(r.p)}</div></div>`;
+    rows += `<div class="kr ${atanacak === ad ? 'sec' : ''}" data-t="${esc(ad)}"><span class="ck ${v ? 'on' : ''}">${v ? '✓' : ''}</span><div class="n">${esc(r.a || r.n)}${r.s === 'Kısmen' && !v ? ' <span class="chip y">yarım</span>' : ''}${p ? ` <span class="chip b">📅 ${tarihK(parseD(p.split('|')[0]))} #${p.split('|')[1]}</span>` : ''}</div><div class="p">${esc(r.p)}</div></div>`;
   });
   $('#kpanel').innerHTML = `<div class="kh"><div class="row"><b style="font-size:16px">📚 Kaynaktan test ata</b><span class="sp"></span><button class="btn sm" data-k="kapat">✕</button></div>
     <div class="mut sm">Bir teste dokun, sonra plandaki pomodoroya dokun (ya da sürükle). Test o pomodoronun ilk boş satırına yazılır.</div>
@@ -717,7 +724,7 @@ function kaynakCoklu() {
   if (b) b.rows.forEach((r, j) => {
     if (r.sec) { liste += `<div class="kr bas">${esc(r.n)}</div>`; return; }
     const v = kval(b, j), ad = testAd(b, j); if (kpF === 'kalan' && v) return;
-    liste += `<label class="kr"><input type="checkbox" data-kt="${esc(ad)}" ${pkSecim.has(ad) ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--acc)"><div class="n" style="${v ? 'color:var(--mut)' : ''}">${v ? '✓ ' : ''}${esc(r.n)}${pl[ad] ? ` <span class="chip b">📅 ${tarihK(parseD(pl[ad].split('|')[0]))}</span>` : ''}</div><div class="p">${esc(r.p)}</div></label>`;
+    liste += `<label class="kr"><input type="checkbox" data-kt="${esc(ad)}" ${pkSecim.has(ad) ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--acc)"><div class="n" style="${v ? 'color:var(--mut)' : ''}">${v ? '✓ ' : ''}${esc(r.a || r.n)}${pl[ad] ? ` <span class="chip b">📅 ${tarihK(parseD(pl[ad].split('|')[0]))}</span>` : ''}</div><div class="p">${esc(r.p)}</div></label>`;
   });
   box.style.display = 'block';
   box.innerHTML = `<div class="card" style="margin:8px 0;background:var(--p2)"><div class="row"><b>📚 Kaynaktan ekle</b><span class="mut sm">testleri işaretle, hepsi boş satırlara yazılsın</span><span class="sp"></span><button class="btn sm" data-m="kpikapat">✕</button></div>
@@ -801,7 +808,7 @@ function kitapAc(n) {
   let rows = '';
   b.rows.forEach((r, i) => {
     if (r.sec) { const ch = []; for (let j = i + 1; j < b.rows.length && !b.rows[j].b; j++) ch.push(j); const on = ch.filter(j => kval(b, j)).length; rows += `<div class="trow sec" data-ksec="${i}"><span class="cb ${on == ch.length ? 'on' : on ? 'mix' : ''}">${on == ch.length ? '✓' : on ? '–' : ''}</span><div class="n">${esc(r.n)} <span class="mut">${on}/${ch.length}</span></div><div class="p">${esc(r.p)}</div></div>`; }
-    else { const v = kval(b, i), pp = pl[testAd(b, i)]; rows += `<div class="trow ${r.child ? 'ch' : ''}" data-ki="${i}"><span class="cb ${v ? 'on' : (r.s == 'Kısmen' ? 'half' : '')}">${v ? '✓' : ''}</span><div class="n">${esc(r.n)}${r.t ? ' <span class="mut">• ' + esc(r.t) + '</span>' : ''}${(!v && r.s == 'Kısmen') ? ' <span class="chip y">yarım</span>' : ''}${pp ? ` <span class="chip b">📅 ${tarihK(parseD(pp.split('|')[0]))}</span>` : ''}</div><div class="p">${esc(r.p)}</div></div>`; }
+    else { const v = kval(b, i), pp = pl[testAd(b, i)]; rows += `<div class="trow ${r.child ? 'ch' : ''}" data-ki="${i}"><span class="cb ${v ? 'on' : (r.s == 'Kısmen' ? 'half' : '')}">${v ? '✓' : ''}</span><div class="n">${esc(r.child ? r.n : (r.a || r.n))}${r.t ? ' <span class="mut">• ' + esc(r.t) + '</span>' : ''}${(!v && r.s == 'Kısmen') ? ' <span class="chip y">yarım</span>' : ''}${pp ? ` <span class="chip b">📅 ${tarihK(parseD(pp.split('|')[0]))}</span>` : ''}</div><div class="p">${esc(r.p)}</div></div>`; }
   });
   $('#mbox').innerHTML = `<div class="mh"><span class="sp"></span><button class="btn" data-x="1">✕</button></div><div class="hd"><div class="cv" style="background-image:url('${b.cov}')"></div><div><h2 style="font-size:17px;margin-bottom:8px">${esc(b.name)}</h2><span class="chip" style="background:${c};color:#fff">${k}</span> <b style="font-size:22px">${p == null ? '' : '%' + p}</b><div class="bar" style="height:9px"><i style="width:${p || 0}%;background:${c}"></i></div></div></div>
     ${b.note ? `<div class="card"><h3>Durum</h3>${esc(b.note)}</div>` : ''}
@@ -816,7 +823,7 @@ mb.addEventListener('click', e => {
   if (r) { const i = +r.dataset.ki; s[i] = kval(b, i) ? 0 : 1; }
   else if (sc) { const i = +sc.dataset.ksec, ch = []; for (let j = i + 1; j < b.rows.length && !b.rows[j].b; j++) ch.push(j); const all = ch.every(j => kval(b, j)); ch.forEach(j => s[j] = all ? 0 : 1); }
   else return;
-  const st = $('#modal').scrollTop; B.yaz([{ s: 'kaynak', k: String(b.n), v: s }]); kitapAc(b.n); $('#modal').scrollTop = st;
+  const st = $('#modal').scrollTop; B.yaz([{ s: 'kaynak', k: kK(b.n), v: s }]); kitapAc(b.n); $('#modal').scrollTop = st;
 });
 
 /* ====== DENEMELER ====== */

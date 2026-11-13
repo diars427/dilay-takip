@@ -174,7 +174,7 @@ main.oniz::before{content:'👁 Önizleme: paylaştığın kişiler uygulamayı 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="bulut.js"></script>
-<script src="kaynak-veri.js?v=12"></script>
+<script src="kaynak-veri.js?v=22"></script>
 <script src="deneme-veri.js"></script>
 <script>
 'use strict';
@@ -327,12 +327,13 @@ const planOzet = key => planSatir(key).filter(r => r.ad.trim());
 
 /* ====== kaynak verisi ====== */
 const KB = window.KD.books;
-KB.forEach(b => { b.rows.forEach((r, i) => { const nx = b.rows[i + 1]; r.sec = !!(r.b && nx && !nx.b); r.child = false; }); let ic = false; b.rows.forEach(r => { if (r.sec) ic = true; else if (r.b) ic = false; else r.child = ic; }); });
+KB.forEach(b => { b.rows.forEach((r, i) => { const nx = b.rows[i + 1]; r.sec = !!(r.b && ((nx && !nx.b) || r.h)); r.child = false; }); let ic = false; b.rows.forEach(r => { if (r.sec) ic = true; else if (r.b) ic = false; else r.child = ic; }); });
 // icindekiler genisletilen kitaplarda (b.v, b.eski) isaretler yeni anahtarda; eski isaretler yeni satirlara tasinir
 const KBN = {}; KB.forEach(b => KBN[b.n] = b);
 const kK = n => { const b = KBN[n]; return b && b.v ? n + '@' + b.v : String(n); };
-const kTasi = (b, s) => { const o = {}; Object.keys(s).forEach(i => (b.eski[i] || []).forEach(j => o[j] = s[i])); return o; };
-const kS = n => { const b = KBN[n]; if (b && b.v) { const y = B.get('kaynak', kK(n)); if (y) return y; const e = B.get('kaynak', String(n)); return e ? kTasi(b, e) : {}; } return B.get('kaynak', String(n)) || {}; };
+const kTasi = (h, s) => { const o = {}; Object.keys(s).forEach(i => ((h || [])[i] || []).forEach(j => o[j] = s[i])); return o; };
+// once guncel surum, yoksa onceki surum(ler), en son ilk hal; eski isaretler yeni satirlara tasinir
+const kS = n => { const b = KBN[n]; if (b && b.v) { const y = B.get('kaynak', kK(n)); if (y) return y; for (const v of Object.keys(b.eskiv || {}).sort((a, c) => c - a)) { const e = B.get('kaynak', n + '@' + v); if (e) return kTasi(b.eskiv[v], e); } const e = B.get('kaynak', String(n)); return e ? kTasi(b.eski, e) : {}; } return B.get('kaynak', String(n)) || {}; };
 function kval(b, i) { const s = kS(b.n); if (s[i] !== undefined) return s[i]; return b.rows[i].s == 'Çözülü' ? 1 : 0; }
 function ktouched(b) { const s = kS(b.n); return Object.keys(s).some(k => s[k] !== (b.rows[k] && b.rows[k].s == 'Çözülü' ? 1 : 0)); }
 const kleaf = b => b.rows.map((r, i) => [r, i]).filter(x => !x[0].sec);
@@ -788,7 +789,37 @@ $('#modal').addEventListener('mousedown', e => { if (e.target.id === 'modal') { 
 
 /* ====== KAYNAKLAR ====== */
 let ksek = 'Özet', kflt = 'Hepsi';
-const KTABS = ['Özet', ...KSUBS, 'Konular', 'Denemeler'];
+const KTABS = ['Özet', ...KSUBS, 'Final Dergileri', 'Konular', 'Denemeler'];
+// Final dergileri: derse gore (kitap kitap) ya da aya gore (o ayin butun fasikulleri)
+const FAYLAR = ['Eylül', 'Ekim', 'Kasım', 'Aralık', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs'];
+let fGor = 'ders', fAy = (() => { const a = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'][new Date().getMonth()]; return FAYLAR.includes(a) ? a : 'Eylül'; })();
+const kitapKart = b => { const k = kcls(b), c = KCC[k], p = kpct(b); return `<button class="book" data-n="${b.n}"><div class="cv" style="background-image:url('${b.cov}')"></div><div class="bd"><div class="nm">${esc(b.name)}</div><div class="bar"><i style="width:${p || 0}%;background:${c}"></i></div><div class="row2"><span><span class="kd" style="background:${c}"></span>${k}</span><b>${p == null ? '—' : '%' + p}</b></div></div></button>`; };
+function cizFinal() {
+  const F = KB.filter(b => b.fin);
+  let h = `<div class="chips">${[['ders', 'Derse göre'], ['ay', 'Aya göre']].map(([k, a]) => `<button class="${fGor === k ? 'on' : ''}" data-fgor="${k}">${a}</button>`).join('')}</div>`;
+  if (fGor === 'ders') return h + `<div class="grid">${F.map(kitapKart).join('')}</div>`;
+  h += `<div class="chips">${FAYLAR.map(a => { const T = F.flatMap(b => b.rows.map((r, i) => [b, r, i]).filter(([, r]) => r.ay === a && !r.b)); const on = T.filter(([b, , i]) => kval(b, i)).length; return `<button class="${a === fAy ? 'on' : ''}" data-fay="${a}">${a}${T.length ? ` <span class="mut">${on}/${T.length}</span>` : ''}</button>`; }).join('')}</div>`;
+  const pl = planliTestler();
+  F.forEach(b => {
+    const R = b.rows.map((r, i) => [r, i]).filter(([r]) => r.ay === fAy); if (!R.length) return;
+    const T = R.filter(([r]) => !r.b), on = T.filter(([, i]) => kval(b, i)).length;
+    h += `<div class="card"><h3 style="display:flex;align-items:center;gap:8px"><span class="dcov" style="width:26px;height:36px;border-radius:4px;background:url('${b.cov}') center/cover;display:inline-block"></span>${esc(b.ders || b.name)} <span class="mut" style="text-transform:none">${on}/${T.length}</span></h3>`;
+    R.forEach(([r, i]) => {
+      if (r.b) { h += `<div class="kr bas">${esc(r.n)}</div>`; return; }
+      const v = kval(b, i), pp = pl[testAd(b, i)];
+      h += `<div class="trow ch" data-fk="${b.n}|${i}"><span class="cb ${v ? 'on' : ''}">${v ? '✓' : ''}</span><div class="n">${esc(r.n)}${pp ? ` <span class="chip b">📅 ${tarihK(parseD(pp.split('|')[0]))}</span>` : ''}</div></div>`;
+    });
+    h += '</div>';
+  });
+  return h + `<div class="mut sm" style="margin-top:8px">${DILAY() ? 'Çözdüğün teste dokunarak tik at. Pomodoroya atamak için Haftalık Plan\'da "Kaynaktan ekle"den dersi seç.' : 'Dilay\'ın çözdükleri tikli. 📅 = plana atanmış.'}</div>`;
+}
+app.addEventListener('click', e => {
+  const g = e.target.closest('[data-fgor]'); if (g) { fGor = g.dataset.fgor; return ciz(); }
+  const a = e.target.closest('[data-fay]'); if (a) { fAy = a.dataset.fay; return ciz(); }
+  const t = e.target.closest('[data-fk]'); if (!t || !DILAY()) return;
+  const [n, i] = t.dataset.fk.split('|').map(Number), b = KB.find(x => x.n === n), s = Object.assign({}, kS(n)); s[i] = kval(b, i) ? 0 : 1;
+  const y = scrollY; B.yaz([{ s: 'kaynak', k: kK(n), v: s }]); ciz(); scrollTo(0, y);
+});
 const KKCOL = { 'İyi': '#2e9e5b', 'Orta': '#c99700', 'Eksik': '#e8710a', 'İşlenmedi': '#d64545' };
 function cizKaynak() {
   let h = `<div class="chips">${KTABS.map(t => `<button class="${t === ksek ? 'on' : ''}" data-sec="${t}">${KSUBL[t] || t}</button>`).join('')}</div>`;
@@ -799,6 +830,8 @@ function cizKaynak() {
       <div class="card" style="margin-top:12px"><h3>Derse göre ortalama ilerleme</h3>`;
     KSUBS.forEach(s => { const bs = KB.filter(b => b.sub == s && kpct(b) != null && kcls(b) != 'Diğer'); const avg = bs.length ? Math.round(bs.reduce((a, b) => a + kpct(b), 0) / bs.length) : 0; h += `<div class="srow"><div class="t">${KSUBL[s] || s}</div><div class="bar"><i style="width:${avg}%;background:var(--acc)"></i></div><div class="v">%${avg}</div></div>`; });
     h += `<div class="mut sm">Plandaki bir testi "yaptım" diye işaretleyince burada da otomatik çözüldü olur.</div></div>`;
+  } else if (ksek === 'Final Dergileri') {
+    h += cizFinal();
   } else if (ksek === 'Konular') {
     (window.KD.konu || []).forEach(k => { const c = {}; k.items.forEach(i => c[i[1]] = (c[i[1]] || 0) + 1); h += `<div class="card"><h3>${esc(k.t)} <span class="mut" style="text-transform:none">${Object.entries(c).map(([a, b]) => a + ' ' + b).join(' • ')}</span></h3><div class="kc">${k.items.map(i => `<span style="background:${KKCOL[i[1]]}">${esc(i[0])}</span>`).join('')}</div></div>`; });
   } else if (ksek === 'Denemeler') {
@@ -807,7 +840,7 @@ function cizKaynak() {
   } else {
     const fl = ['Hepsi', 'Tamamlandı', 'Kısmi', 'Çok az', 'Boş'];
     h += `<div class="chips">${fl.map(f => `<button class="${f === kflt ? 'on' : ''}" data-kt="${f}">${f}</button>`).join('')}</div><div class="grid">`;
-    KB.filter(b => b.sub === ksek && (kflt === 'Hepsi' || kcls(b) === kflt)).forEach(b => { const k = kcls(b), c = KCC[k], p = kpct(b); h += `<button class="book" data-n="${b.n}"><div class="cv" style="background-image:url('${b.cov}')"></div><div class="bd"><div class="nm">${esc(b.name)}</div><div class="bar"><i style="width:${p || 0}%;background:${c}"></i></div><div class="row2"><span><span class="kd" style="background:${c}"></span>${k}</span><b>${p == null ? '—' : '%' + p}</b></div></div></button>`; });
+    KB.filter(b => b.sub === ksek && !b.fin && (kflt === 'Hepsi' || kcls(b) === kflt)).forEach(b => { h += kitapKart(b); });
     h += '</div>';
   }
   return h;
@@ -818,6 +851,7 @@ function kitapAc(n) {
   acikKitap = n; const b = KB.find(x => x.n === n), k = kcls(b), c = KCC[k], p = kpct(b), pl = planliTestler();
   let rows = '';
   b.rows.forEach((r, i) => {
+    if (r.h) { rows += `<div class="trow sec" style="background:var(--acc);color:#fff;margin-top:10px"><div class="n">${esc(r.n)}</div><div class="p">${esc(r.p || '')}</div></div>`; return; }
     if (r.sec) { const ch = []; for (let j = i + 1; j < b.rows.length && !b.rows[j].b; j++) ch.push(j); const on = ch.filter(j => kval(b, j)).length; rows += `<div class="trow sec" data-ksec="${i}"><span class="cb ${on == ch.length ? 'on' : on ? 'mix' : ''}">${on == ch.length ? '✓' : on ? '–' : ''}</span><div class="n">${esc(r.n)} <span class="mut">${on}/${ch.length}</span></div><div class="p">${esc(r.p)}</div></div>`; }
     else { const v = kval(b, i), pp = pl[testAd(b, i)]; rows += `<div class="trow ${r.child ? 'ch' : ''}" data-ki="${i}"><span class="cb ${v ? 'on' : (r.s == 'Kısmen' ? 'half' : '')}">${v ? '✓' : ''}</span><div class="n">${esc(r.a || r.n)}${r.t ? ' <span class="mut">• ' + esc(r.t) + '</span>' : ''}${(!v && r.s == 'Kısmen') ? ' <span class="chip y">yarım</span>' : ''}${pp ? ` <span class="chip b">📅 ${tarihK(parseD(pp.split('|')[0]))}</span>` : ''}</div><div class="p">${esc(r.p)}</div></div>`; }
   });
@@ -1453,7 +1487,7 @@ function iphoneOk() {
   const d = document.createElement('div');
   d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(5,8,18,.88);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:' + (ipad ? 'flex-start' : 'flex-end') + ';padding:24px;text-align:center;font-size:18px;line-height:1.5';
   const ok = `<div style="font-size:56px;line-height:1;animation:zipla 1s infinite">${ipad ? '⬆' : '⬇'}</div>`;
-  const yazi = `<div style="max-width:340px;margin:${ipad ? '8px 0 0' : '0 0 8px'}"><b>1.</b> ${ipad ? 'Yukarıdaki' : 'Aşağıdaki'} <b>Paylaş</b> tuşuna bas <span style="display:inline-block;border:2px solid #fff;border-radius:6px;padding:0 6px">⬆</span><br><b>2.</b> <b>Ana Ekrana Ekle</b>\'ye bas<br><b>3.</b> <b>Ekle</b>\'ye bas<div style="font-size:14px;opacity:.7;margin-top:10px">(kapatmak için dokun)</div></div>`;
+  const yazi = `<div style="max-width:340px;margin:${ipad ? '8px 0 0' : '0 0 8px'}"><b>1.</b> ${ipad ? 'Yukarıdaki' : 'Aşağıdaki'} <b>Paylaş</b> tuşuna bas <span style="display:inline-block;border:2px solid #fff;border-radius:6px;padding:0 6px">⬆</span><br><span style="font-size:14px;opacity:.8">(göremiyorsan önce <b>•••</b> tuşuna, sonra <b>Paylaş</b>\'a bas)</span><br><b>2.</b> Listeyi kaydır, <b>Ana Ekrana Ekle</b>\'ye bas<br><b>3.</b> Sağ üstte <b>Ekle</b>\'ye bas<div style="font-size:14px;opacity:.7;margin-top:10px">(kapatmak için dokun)</div></div>`;
   d.innerHTML = '<style>@keyframes zipla{50%{transform:translateY(' + (ipad ? '-' : '') + '12px)}}</style>' + (ipad ? ok + yazi : yazi + ok);
   d.onclick = () => d.remove(); document.body.appendChild(d);
 }

@@ -156,6 +156,29 @@ table.tb{border-collapse:collapse;width:100%}table.tb td,table.tb th{padding:7px
 .pdfkap .pq-sol{padding:8px}.pdfkap .pq-bos{display:block!important;border-left:1px dashed #888;min-height:240px;color:#888;padding:8px}
 .pdfkap .notk{background:#fff;border:1px solid #bbb;border-radius:6px;padding:10px;margin-bottom:8px;break-inside:avoid;color:#000}
 .pdfkap .chip{border:1px solid #999;background:#fff!important;color:#000!important}.pdfkap .mut{color:#555!important}
+/* bugun: yan yana sutunlar */
+.bgust{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.bst{background:var(--p);border:1px solid var(--line);border-radius:12px;padding:8px 11px;min-width:0}
+.bst>span{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;display:block}
+.bst>b{font-size:17px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:1px 0}
+.bst>i{font-style:normal;font-size:12px;color:var(--mut);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bst>i b{display:inline;font-size:12px}
+.bgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:start}
+.bcol{background:var(--p);border:1px solid var(--line);border-radius:14px;padding:10px 12px;min-width:0;display:flex;flex-direction:column;max-height:calc(100vh - 222px)}
+.bch{display:flex;align-items:center;gap:6px;margin-bottom:4px;padding-bottom:6px;border-bottom:1px solid var(--line)}.bch h3{margin:0;flex:1}
+.bcl{overflow:auto;flex:1;min-height:0;margin:0 -6px;padding:0 6px}
+.br{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px;min-height:36px}
+.br .t{width:42px;flex:none;color:var(--mut);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.br .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.br.tik,.br.is{cursor:pointer}.br.tik:hover,.br.is:hover{background:var(--p2)}
+.br.su{background:rgba(79,140,255,.16);box-shadow:inset 3px 0 0 var(--acc)}
+.br.bitti .n{color:var(--mut)}.br.is.bitti .n{text-decoration:line-through}
+.br .cb{width:20px;height:20px;border-radius:6px;font-size:13px;cursor:pointer}
+.br.sbm .n{color:var(--blue)}
+.bos{color:var(--mut);font-size:12.5px;padding:10px 0}
+.seg button.on{background:#4f8cff;color:#fff}
+input[type=time]{background:var(--p2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit;font-size:16px}
+@media (max-width:1180px){.bgrid,.bgust{grid-template-columns:repeat(2,minmax(0,1fr))}.bcol{max-height:62vh}}
+@media (max-width:640px){.bgrid,.bgust{grid-template-columns:1fr}.bcol{max-height:none}}
 .pdfkap .soru{background:#fff;padding:0}.ib{width:100%;border:0;border-radius:8px;padding:9px 4px;font:700 12.5px system-ui,sans-serif;cursor:pointer;color:#fff;background:#3a4058}.ib.ok{background:#2a8f55}.ib.no{background:#9b3434}
 #nav{scrollbar-width:none}#nav::-webkit-scrollbar{display:none}
 .seg{display:inline-flex!important;background:#232a40;border-radius:99px;padding:3px;gap:2px;align-items:center}.seg button{border:0;background:none;color:#aab1c7;border-radius:99px;padding:4px 12px;font:700 12px system-ui,sans-serif;cursor:pointer}.seg button.on{background:#4f8cff;color:#fff}
@@ -174,7 +197,7 @@ main.oniz::before{content:'👁 Önizleme: paylaştığın kişiler uygulamayı 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="bulut.js"></script>
-<script src="kaynak-veri.js?v=25"></script>
+<script src="kaynak-veri.js?v=26"></script>
 <script src="deneme-veri.js"></script>
 <script>
 'use strict';
@@ -249,6 +272,7 @@ function hazir() {
   document.body.classList.toggle('ro', !DILAY());
   ciz();
   B.cek().then(async () => { if (!DILAY()) return;   // ilk acilista bir kez (bulutta deneme yoksa) eski takipten aktar
+    kopruBasla();
     await ilkAktarim(); const n = await soruAktar(); if (n) { toast(`Yapamadığın ${n} soru aktarıldı.`); ciz(); } const nn = await notlarAktar(); if (nn) { toast(nn + ' not aktarıldı.'); ciz(); } });
   setInterval(() => { if (document.visibilityState === 'visible') B.cek(); }, 15000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') B.cek(); });
@@ -399,7 +423,7 @@ function cizHafta() {
       hc += `<div class="hc ${t ? 'done' : ''} ${akt || t ? '' : 'pasif'} ${oz.length ? '' : 'bos'} ${secili === key ? 'secili' : ''} ${atanacak || secili ? 'hedef' : ''}" data-k="${key}" draggable="true" title="${tm}">
         <div class="hn"><span>${no}${glob ? ' · #' + glob : ''}</span><span class="mut">${hhmm(POM[no - 1])}</span></div><div class="hp">${oz.length ? esc(oz.map(r => (r.d ? '✓ ' : '') + r.ad).join(' · ')) : '—'}</div><div class="hs">${dr}</div></div>`;
     }
-    s += `<div class="gun ${dk(d) === dk(bugun) ? 'bugun' : ''} ${kap ? 'kapali' : ''}"><div class="gust"><span class="gad">${ad}</span><span class="mut sm">${tarihK(d)}${nums.length ? ` · ${nums[0]}–${nums[nums.length - 1]}. pomodoro` : ''}</span><span class="sp"></span><span class="sm" style="color:var(--blue);font-weight:700">${durum}</span>${sinav ? '' : `<button class="btn sm" data-a="guntemizle" data-g="${g}">Temizle</button>`}</div><div class="ghc">${hc}</div></div>`;
+    s += `<div class="gun ${dk(d) === dk(bugun) ? 'bugun' : ''} ${kap ? 'kapali' : ''}"><div class="gust" ${DILAY() && !sinav ? `data-gd="${dk(d)}" title="Sağ tık: günü Tatil / Hasta / İzin / Dinlenme olarak işaretle"` : ''}><span class="gad">${kap ? gunIkon(K()[dk(d) + '|G']) + ' ' : ''}${ad}</span><span class="mut sm">${tarihK(d)}${nums.length ? ` · ${nums[0]}–${nums[nums.length - 1]}. pomodoro` : ''}</span><span class="sp"></span><span class="sm" style="color:${kap ? 'var(--gold)' : 'var(--blue)'};font-weight:700">${durum}</span>${sinav ? '' : `${DILAY() ? `<button class="btn sm" data-a="gunmenu" data-gd="${dk(d)}">📅 ${kap ? 'Değiştir' : 'İşaretle'} ▾</button>` : ''}<button class="btn sm" data-a="guntemizle" data-g="${g}">Temizle</button>`}</div><div class="ghc">${hc}</div></div>`;
   }
   const G = genelVerim(), hy = vTop && h <= bugun ? Math.round(1000 * vIyi / vTop) / 10 : null, gy = G.due ? Math.round(1000 * G.done / G.due) / 10 : null;
   const k1 = Math.round((TYT - bugun) / 864e5), k2 = Math.round((AYT - bugun) / 864e5), hs = Math.round((SON - ILK) / 6048e5) + 1;
@@ -446,6 +470,11 @@ function olaylar(gunSay) {
     });
   }
   (AY2.ilaclar || []).forEach(x => { const [h, m] = x.Saat.split(':').map(Number); for (let o = 0; o <= gunSay; o++) { const d = addD(gunOf(now), o), z = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m); if (z <= now) continue; const k = anahtarZ(z) + '|IL:' + x.Id, at = !!AT[k]; L.push({ z, kod: 'IL', ad: 'İLAÇ: ' + x.Ad, ses: sesVarT('IL') && !at, mj: sesVarT('IL') && !at, k, atla: at }); } });
+  // rutin / yapacaklarim (saati olan, yapilmamis)
+  for (let o = 0; o <= gunSay; o++) {
+    const d = addD(gunOf(now), o);
+    gunIsleri(d).forEach(x => { if (!x.saat || x.yap) return; const z = new Date(d.getFullYear(), d.getMonth(), d.getDate(), +x.saat.slice(0, 2), +x.saat.slice(3)); if (z <= now) return; const k = anahtarZ(z) + '|GR:' + x.id, at = !!AT[k], ses = sesVarT('GR'); L.push({ z, kod: 'GR', ad: (x.tur === 'R' ? 'Rutin: ' : 'Yapacağım: ') + x.ad, ses: ses && !at, mj: ses && !at, k, atla: at }); });
+  }
   return L.sort((a, b) => a.z - b.z);
 }
 function suAnBlok() {
@@ -460,37 +489,229 @@ function suAnBlok() {
   return { ad, yap, bas: once.z, son: sonra.z };
 }
 const yokProgram = '<div class="card mut">Alarm ve ilaç bilgileri bilgisayardaki YKS App\'ten gelir. Bilgisayarda YKS App bir kez buluta bağlanınca burada görünür.</div>';
+const hm = z => pad2(z.getHours()) + ':' + pad2(z.getMinutes());
 function cizBugun() {
   const now = new Date(), su = suAnBlok(), Y = olaylar(2);
   if (!Y) return yokProgram;
   const sa = Y.find(o => o.ses), G = genelVerim(), gy = G.due ? Math.round(1000 * G.done / G.due) / 10 : null, bg = gunOf(now);
-  const k1 = Math.round((TYT - bg) / 864e5), k2 = Math.round((AYT - bg) / 864e5);
-  let h = `<div class="big" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
-    <div class="stat" style="text-align:left"><span>Şu an yapman gereken</span><b style="font-size:22px">${su ? esc(su.ad) : '—'}</b>${su ? `<div class="mut sm">${esc(su.yap)}</div><div class="sm" style="margin-top:6px">${pad2(su.bas.getHours())}:${pad2(su.bas.getMinutes())} – ${pad2(su.son.getHours())}:${pad2(su.son.getMinutes())} · kalan <b data-cd2="${su.son.toISOString()}" style="display:inline;font-size:14px;color:var(--blue)"></b></div>` : ''}</div>
-    <div class="stat" style="text-align:left"><span>Sonraki alarm</span><b data-cd2="${sa ? sa.z.toISOString() : ''}" style="color:var(--blue)">--:--:--</b>${sa ? `<div class="sm" style="${sa.kod === 'IL' ? 'color:#e78bff' : ''}">${zMetin(sa.z)} — ${esc(sa.ad)}</div>` : '<div class="mut sm">Yaklaşan sesli alarm yok</div>'}</div>
-    <div class="stat" style="text-align:left"><span>Durum</span><b style="color:${gy == null ? 'var(--mut)' : gy >= 80 ? 'var(--g2)' : gy >= 50 ? 'var(--gold)' : 'var(--r2)'}">${gy == null ? 'henüz başlamadı' : '%' + fmt(gy)}</b><div class="mut sm">genel verim${G.due ? ` (${G.done}/${G.due})` : ''}</div><div class="sm" style="margin-top:6px">TYT'ye <b style="display:inline;font-size:14px">${k1}</b> · AYT'ye <b style="display:inline;font-size:14px">${k2}</b> gün</div></div></div>`;
-  // bugunun pomodorolari
-  const NUM = haftaNumara(haftaBas(bg));
-  let pl = '';
+  const k1 = Math.round((TYT - bg) / 864e5), k2 = Math.round((AYT - bg) / 864e5), gk = K()[dk(bg) + '|G'];
+  // ust serit: su an / sonraki alarm / gun durumu / verim
+  let h = `<div class="bgust">
+    <div class="bst"><span>Şu an</span><b title="${su ? esc(su.ad) : ''}">${su ? esc(su.ad) : '—'}</b>${su ? `<i>${hm(su.bas)}–${hm(su.son)} · kalan <b data-cd2="${su.son.toISOString()}" style="color:var(--blue)"></b></i>` : '<i>&nbsp;</i>'}</div>
+    <div class="bst"><span>Sonraki alarm</span><b data-cd2="${sa ? sa.z.toISOString() : ''}" style="color:var(--blue)">--:--:--</b><i style="${sa && sa.kod === 'IL' ? 'color:#e78bff' : ''}" title="${sa ? esc(sa.ad) : ''}">${sa ? zMetin(sa.z) + ' — ' + esc(sa.ad) : 'Yaklaşan sesli alarm yok'}</i></div>
+    <div class="bst"><span>${GUN[gi(bg)]} ${tarihK(bg)}</span><b style="color:${gk ? 'var(--gold)' : 'var(--ink)'}">${gk ? gunIkon(gk) + ' ' + esc(gk) : 'Normal gün'}</b><i><button class="btn sm" data-a="gunmenu" data-gd="${dk(bg)}">📅 Günü işaretle ▾</button></i></div>
+    <div class="bst"><span>Genel verim</span><b style="color:${gy == null ? 'var(--mut)' : gy >= 80 ? 'var(--g2)' : gy >= 50 ? 'var(--gold)' : 'var(--r2)'}">${gy == null ? 'henüz başlamadı' : '%' + fmt(gy)}</b><i>TYT'ye ${k1} · AYT'ye ${k2} gün</i></div></div>`;
+  // 1) pomodorolar
+  const NUM = haftaNumara(haftaBas(bg)), nm = now.getHours() * 60 + now.getMinutes();
+  let pl = '', ps = 0, ph = 0;
   for (let no = 1; no <= 12; no++) {
     const key = pKey(bg, no), oz = planOzet(key), t = tik(bg, no), b = POM[no - 1];
-    const ch = kutuKapali(bg, no) ? `<span class="chip">${esc(K()[key])}</span>` : t ? '<span class="chip ok">Tamamlandı</span>' : !pomAktif(bg, no) ? '<span class="chip">hedef dışı</span>' : oz.length ? '<span class="chip b">Planlandı</span>' : '<span class="chip y">Planlanmadı</span>';
-    pl += `<div class="trow" data-a="planac" data-k="${key}"><div style="width:86px;flex:none"><b>${no}. pom</b>${NUM[key] ? ` <span class="mut sm">#${NUM[key]}</span>` : ''}<div class="mut sm">${hhmm(b)}–${hhmm(b + 45)}</div></div><div class="n" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${oz.length ? oz.map(r => (r.d ? '✓ ' : '') + esc(r.ad)).join(' · ') : '<span class="mut">Plan yok — dokun ve yaz</span>'}</div>${ch}</div>`;
+    if (pomAktif(bg, no)) { ph++; if (t) ps++; }
+    const ch = kutuKapali(bg, no) ? `<span class="chip">${esc(K()[key])}</span>` : t ? '<span class="chip ok">✓</span>' : !pomAktif(bg, no) ? '<span class="chip">kapalı</span>' : oz.length ? '' : '<span class="chip y">plan yok</span>';
+    const metin = oz.length ? oz.map(r => (r.d ? '✓ ' : '') + r.ad).join(' · ') : '';
+    pl += `<div class="br tik ${nm >= b && nm < b + 45 ? 'su' : ''} ${t ? 'bitti' : ''}" data-a="planac" data-k="${key}" title="${esc(metin)}"><span class="t">${hhmm(b)}</span><span class="n"><b>${no}.</b>${NUM[key] ? `<span class="mut sm"> #${NUM[key]}</span>` : ''} ${metin ? esc(metin) : '<span class="mut">—</span>'}</span>${ch}</div>`;
   }
-  h += `<div class="card" style="margin-top:12px"><h3>Bugünün pomodoroları — ${GUN[gi(bg)]} ${tarihK(bg)}</h3>${pl}</div>`;
-  h += `<div class="card"><h3>İlaç (bugün)</h3>${ilacBugun()}</div>`;
-  h += `<div class="card"><h3>Yaklaşan alarmlar</h3>${alarmListe(Y.slice(0, 10))}<a class="btn sm" href="#alarm" style="margin-top:8px;display:inline-block">Tüm alarmlar ve ses ayarları »</a></div>`;
+  // 2) yapacaklarim: rutin + bugune ozel isler + serbest molalar (saat sirasiyla)
+  const IS = gunIsleri(bg), SBv = B.hepsi('serbest'), P0 = OZ('program') || {}, sat = [];
+  (P0[GUN_EN[gi(bg)]] || []).filter(e => e.k === 'S').forEach(e => sat.push({ sb: 1, saat: e.s, ad: SBv[dk(bg) + '|' + e.s] || '' }));
+  const L = [...IS, ...sat].sort((a, b) => (a.saat || '99:99').localeCompare(b.saat || '99:99'));
+  const yp = L.map(x => {
+    if (x.sb) return `<div class="br sbm"><span class="t">${x.saat}</span><span class="n">☕ <span class="mut">Serbest mola</span>${x.ad ? ' — ' + esc(x.ad) : ''}</span><button class="btn sm" data-sbp="${dk(bg)}|${x.saat}">${x.ad ? 'değiştir' : 'planla'}</button><button class="btn sm" data-isekle="${x.saat}" title="Bu saate iş ekle">＋</button></div>`;
+    const gec = x.saat && !x.yap && x.saat <= hm(now);
+    return `<div class="br is ${x.yap ? 'bitti' : ''}" data-is="${x.tur}|${x.id}|${x.ds}"><span class="cb ${x.yap ? 'on' : ''}" data-istik="${x.ds}|${x.id}">${x.yap ? '✓' : ''}</span><span class="t" style="${gec ? 'color:var(--r2)' : ''}">${x.saat || '—'}</span><span class="n" title="${esc(x.ad)}">${esc(x.ad)}</span>${x.tur === 'R' ? '<span class="mut sm" title="Rutin (her gün tekrar eder)">🔁</span>' : ''}${x.saat && !x.yap && !gec ? '<span class="sm" title="Bu saatte bilgisayarda MJ çalar">🔔</span>' : ''}${x.yap && /^\d\d:\d\d$/.test(x.yap) ? `<span class="mut sm">${x.yap}</span>` : ''}<button class="btn sm" data-ismenu="${x.tur}|${x.id}|${x.ds}">⋯</button></div>`;
+  }).join('');
+  const isSay = IS.length, isYap = IS.filter(x => x.yap).length;
+  // 3) ilaclar  4) alarmlar
+  h += `<div class="bgrid">
+    <section class="bcol"><div class="bch"><h3>Pomodorolar</h3><span class="mut sm">${ps}/${ph}</span><a class="btn sm" href="#plan">Plan »</a></div><div class="bcl">${pl}</div></section>
+    <section class="bcol"><div class="bch"><h3>Yapacaklarım</h3><span class="mut sm">${isYap}/${isSay}</span><button class="btn sm" data-a="rutinler">🔁 Rutinler</button><button class="btn sm pri" data-a="isekle">＋ Ekle</button></div><div class="bcl">${yp || '<div class="bos">Bugün için bir şey yok. ＋ Ekle ile yapacağını yaz; saat koyarsan o saatte alarm çalar.</div>'}</div></section>
+    <section class="bcol"><div class="bch"><h3>İlaçlar</h3><a class="btn sm" href="#ilac">Takip »</a></div><div class="bcl">${ilacBugun()}</div></section>
+    <section class="bcol"><div class="bch"><h3>Alarmlar</h3><a class="btn sm" href="#alarm">Tümü »</a></div><div class="bcl">${alarmListe(Y.slice(0, 25), true)}</div></section></div>
+    ${kopruNotu()}`;
   return h;
 }
 function ilacBugun() {
   const now = new Date(), bg = gunOf(now), A2 = OZ('ayar') || {};
   return (A2.ilaclar || []).map(x => {
     const k = dk(bg) + '|' + x.Id, v = B.get('ilac', k), [h, m] = x.Saat.split(':').map(Number), z = new Date(bg.getFullYear(), bg.getMonth(), bg.getDate(), h, m);
-    return `<div class="trow" style="cursor:default"><div style="width:56px;flex:none" class="mut">${x.Saat}</div><div class="n" style="color:#e78bff;font-weight:700">${esc(x.Ad)}</div>${v ? `<span class="chip ok">içildi${/^\d\d:\d\d$/.test(v) ? ' ' + v : ''}</span><button class="btn sm" data-ilk="${k}">geri al</button>` : `${z <= now ? '<span class="chip r">İÇİLMEDİ</span>' : '<span class="chip">bekleniyor</span>'}<button class="btn sm ok" data-ilk="${k}">İçtim</button>`}</div>`;
-  }).join('') || '<div class="mut">İlaç tanımlı değil.</div>';
+    return `<div class="br ${v ? 'bitti' : ''}"><span class="t">${x.Saat}</span><span class="n" style="color:#e78bff;font-weight:700">${esc(x.Ad)}</span>${v ? `<span class="chip ok">✓${/^\d\d:\d\d$/.test(v) ? ' ' + v : ''}</span><button class="btn sm" data-ilk="${k}">geri al</button>` : `${z <= now ? '<span class="chip r">içilmedi</span>' : ''}<button class="btn sm ok" data-ilk="${k}">İçtim</button>`}</div>`;
+  }).join('') || '<div class="bos">İlaç tanımlı değil.</div>';
 }
-function alarmListe(Y) {
+function alarmListe(Y, kisa) {
+  if (kisa) return Y.map(o => `<div class="br" style="${o.atla ? 'opacity:.55' : ''}"><span class="t" style="width:auto;min-width:44px">${gunOf(o.z) - gunOf(new Date()) ? GUN[gi(o.z)].slice(0, 3) + ' ' : ''}${hm(o.z)}</span><span class="n" title="${esc(o.ad)}" style="${o.atla ? 'text-decoration:line-through;' : ''}color:${o.kod === 'IL' && o.ses ? '#e78bff' : o.mj ? 'var(--gold)' : o.ses ? 'var(--ink)' : 'var(--mut)'}">${esc(o.ad)}</span>${o.sb ? `<button class="btn sm" data-sbp="${o.sb}">planla</button>` : ''}<button class="btn sm" data-atla="${esc(o.k)}">${o.atla ? 'geri al' : 'atla'}</button></div>`).join('') || '<div class="bos">—</div>';
   return Y.map(o => `<div class="trow" style="cursor:default;${o.atla ? 'opacity:.55' : ''}"><div style="width:96px;flex:none" class="mut sm">${zMetin(o.z)}</div><div class="n" style="${o.atla ? 'text-decoration:line-through;' : ''}color:${o.kod === 'IL' && o.ses ? '#e78bff' : o.mj ? 'var(--gold)' : o.ses ? 'var(--ink)' : 'var(--mut)'}">${esc(o.ad)}</div><span class="mut sm">${o.atla ? 'ATLANDI' : o.ses ? (o.mj ? 'MJ' : 'ses') : 'bildirim'}</span>${o.sb ? `<button class="btn sm" data-sbp="${o.sb}">planla</button>` : ''}<button class="btn sm" data-atla="${esc(o.k)}">${o.atla ? 'geri al' : 'atla'}</button></div>`).join('') || '<div class="mut">—</div>';
+}
+
+/* ====== GUN ISARETLEME (sag tik / 📅): Tatil, Hasta, Izin, Dinlenme... ======
+   kapali[yyyy-mm-dd|G] = ad -> o gunun pomodorolari hedefe sayilmaz, pomodoro alarmlari calmaz */
+const gunAdlari = () => { const a = (OZ('ayar') || {}).gunAdlari; return Array.isArray(a) && a.length ? a : ['Tatil', 'Hasta', 'İzin', 'Dinlenme']; };
+const gunIkon = a => ({ 'Tatil': '🏖', 'Hasta': '🤒', 'İzin': '🌿', 'Dinlenme': '😴' }[a] || '📅');
+function gunMenu(d, e) {
+  if (!DILAY()) return;
+  const key = dk(d) + '|G', simdi = K()[key];
+  const ayarla = ad => { B.yaz([{ s: 'kapali', k: key, v: ad }]); ciz(); toast(ad ? `${GUN[gi(d)]} ${tarihK(d)}: ${ad} — pomodorolar sayılmaz, pomodoro alarmları çalmaz.` : `${GUN[gi(d)]} ${tarihK(d)} tekrar normal gün.`, () => { B.yaz([{ s: 'kapali', k: key, v: simdi == null ? null : simdi }]); ciz(); }); };
+  const it = [{ h: `${GUN[gi(d)]} ${tarihK(d)}${simdi ? ' · şu an: ' + simdi : ''}` }];
+  gunAdlari().forEach(a => it.push({ t: (simdi === a ? '● ' : '') + gunIkon(a) + ' ' + a, f: () => ayarla(a) }));
+  it.push({ t: '✏ Başka bir ad yaz…', f: async () => { const a = await adSor('Günü işaretle', 'Bu gün pomodoro yapılmayacak (hedefe sayılmaz, pomodoro alarmları çalmaz). Adı:', simdi || '', gunAdlari()); if (a) ayarla(a); } });
+  if (simdi != null) it.push('-', { t: '✅ Günü aç (normal pomodoro günü)', f: () => ayarla(null) });
+  menuAc(it, e);
+}
+
+/* ====== YAPACAKLARIM + GUNLUK RUTIN ======
+   Bilgisayardaki alarm programi da okur (serbest.json); koc goremez.
+   serbest[R|id] = {"ad","saat","gun":[0-6]}  her gun tekrar eden rutin (gun bos = her gun, 0 = Pazartesi)
+   serbest[G|yyyy-mm-dd|id] = {"ad","saat"}  o gune ozel is
+   serbest[T|yyyy-mm-dd|id] = "HH:mm"         yapildi */
+const jp = v => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } };
+const yeniId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+const GUNK = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+function rutinler() {
+  return Object.entries(B.hepsi('serbest')).filter(([k, v]) => k.startsWith('R|') && v).map(([k, v]) => Object.assign({ id: k.slice(2) }, jp(v) || {})).filter(x => x.ad)
+    .sort((a, b) => (a.saat || '99:99').localeCompare(b.saat || '99:99'));
+}
+function gunIsleri(d) {
+  const ds = dk(d), S = B.hepsi('serbest'), L = [];
+  rutinler().forEach(r => { if (!r.gun || !r.gun.length || r.gun.includes(gi(d))) L.push({ tur: 'R', id: r.id, ad: r.ad, saat: r.saat || '', ds }); });
+  Object.entries(S).forEach(([k, v]) => { if (!k.startsWith('G|' + ds + '|') || !v) return; const o = jp(v); if (o && o.ad) L.push({ tur: 'G', id: k.slice(ds.length + 3), ad: o.ad, saat: o.saat || '', ds }); });
+  L.forEach(x => x.yap = S['T|' + ds + '|' + x.id] || null);
+  return L.sort((a, b) => (a.saat || '99:99').localeCompare(b.saat || '99:99'));
+}
+function isTik(ds, id) { const k = 'T|' + ds + '|' + id, n = new Date(); B.yaz([{ s: 'serbest', k, v: B.get('serbest', k) ? null : (ds === dk(n) ? hm(n) : 'var') }]); ciz(); }
+// ekle / duzenle penceresi. o: {tur:'G'|'R', id, ds} (duzenleme) ya da {saat} (yeni)
+function isDuzenle(o) {
+  o = o || {}; const bg = gunOf(new Date());
+  let tur = o.tur || 'G', ds = o.ds || dk(bg), ad = '', saat = o.saat || '', gun = [];
+  if (o.id && tur === 'R') { const r = jp(B.get('serbest', 'R|' + o.id)) || {}; ad = r.ad || ''; saat = r.saat || ''; gun = r.gun || []; }
+  if (o.id && tur === 'G') { const r = jp(B.get('serbest', 'G|' + ds + '|' + o.id)) || {}; ad = r.ad || ''; saat = r.saat || ''; }
+  const oner = (OZ('ayar') || {}).serbestAdlari || ['Duş', 'Yürüyüş', 'Veteriner'];
+  const sbSaat = ((OZ('program') || {})[GUN_EN[gi(parseD(ds))]] || []).filter(e => e.k === 'S').map(e => e.s);
+  const mb = $('#mbox2'); mb.onclick = null; mb.classList.add('dar');
+  const ciz2 = () => {
+    const tarihSec = tur === 'G' ? `<div class="chips" style="margin:6px 0 0">${[0, 1, 2].map(i => { const d = addD(bg, i); return `<button data-isgun="${dk(d)}" class="${dk(d) === ds ? 'on' : ''}">${i === 0 ? 'Bugün' : i === 1 ? 'Yarın' : GUN[gi(d)]}</button>`; }).join('')}<input type="date" id="istarih" value="${ds}" style="width:auto;padding:5px 8px;font-size:14px"></div>`
+      : `<div class="chips" style="margin:6px 0 0">${GUNK.map((g, i) => `<button data-isgk="${i}" class="${gun.includes(i) ? 'on' : ''}">${g}</button>`).join('')}</div><div class="mut sm">${gun.length ? 'Sadece seçili günler' : 'Hiçbiri seçili değilse her gün'}</div>`;
+    mb.innerHTML = `<h2>${o.id ? 'Düzenle' : 'Yapacağım ekle'}</h2>
+      <label class="mut sm" style="display:block;margin:10px 0 4px">Ne yapacaksın?</label><input type="text" id="isad" value="${esc(ad)}" placeholder="ör. Duş, Veteriner, Kıyafet hazırla">
+      <div class="chips" style="margin:6px 0 0">${oner.map(x => `<button data-isoner="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+      <label class="mut sm" style="display:block;margin:10px 0 4px">Saat (yazarsan o saatte bilgisayarda MJ çalar, "YAPTIM" tuşu çıkar)</label>
+      <div class="row"><input type="time" id="issaat" value="${saat}" style="width:130px"><button class="btn sm" data-issaat="">saatsiz</button>${sbSaat.map(s => `<button class="btn sm" data-issaat="${s}" title="Serbest mola">☕ ${s}</button>`).join('')}</div>
+      <label class="mut sm" style="display:block;margin:12px 0 4px">Ne zaman?</label>
+      <div class="seg" style="display:inline-flex"><button data-istur="G" class="${tur === 'G' ? 'on' : ''}">Bir kez</button><button data-istur="R" class="${tur === 'R' ? 'on' : ''}">🔁 Rutin (tekrar eder)</button></div>
+      ${tarihSec}
+      <div class="row" style="margin-top:16px">${o.id ? '<button class="btn no" id="issil">Sil</button>' : ''}<span class="sp"></span><button class="btn" id="isvaz">Vazgeç</button><button class="btn ok" id="iskay">Kaydet</button></div>`;
+    $('#isad').focus();
+  };
+  const oku = () => { ad = $('#isad').value; saat = $('#issaat').value; const t = $('#istarih'); if (t && t.value) ds = t.value; };
+  ciz2();
+  mb.onclick = ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.isoner != null) { $('#isad').value = b.dataset.isoner; return; }
+    if (b.dataset.issaat != null) { $('#issaat').value = b.dataset.issaat; return; }
+    if (b.dataset.istur) { oku(); tur = b.dataset.istur; ciz2(); return; }
+    if (b.dataset.isgun) { oku(); ds = b.dataset.isgun; ciz2(); return; }
+    if (b.dataset.isgk != null) { oku(); const i = +b.dataset.isgk; gun = gun.includes(i) ? gun.filter(x => x !== i) : [...gun, i].sort(); ciz2(); return; }
+    if (b.id === 'isvaz') { $('#modal2').classList.remove('on'); mb.onclick = null; return; }
+    if (b.id === 'issil') { isSil(o); $('#modal2').classList.remove('on'); mb.onclick = null; return; }
+    if (b.id === 'iskay') {
+      oku(); ad = ad.trim(); if (!ad) { $('#isad').focus(); return; }
+      if (saat && !/^\d\d:\d\d$/.test(saat)) saat = '';
+      const ops = [];
+      if (o.id) ops.push(o.tur === 'R' ? { s: 'serbest', k: 'R|' + o.id, v: null } : { s: 'serbest', k: 'G|' + o.ds + '|' + o.id, v: null });
+      const id = o.id && o.tur === tur ? o.id : yeniId();
+      if (tur === 'R') ops.push({ s: 'serbest', k: 'R|' + id, v: JSON.stringify({ ad, saat, gun }) });
+      else ops.push({ s: 'serbest', k: 'G|' + ds + '|' + id, v: JSON.stringify({ ad, saat }) });
+      B.yaz(ops); $('#modal2').classList.remove('on'); mb.onclick = null; ciz();
+      const gecti = tur === 'G' && saat && ds + ' ' + saat <= dk(new Date()) + ' ' + hm(new Date());
+      toast((tur === 'R' ? 'Rutin kaydedildi' : 'Eklendi') + (!saat ? '.' : gecti ? ' — saati geçtiği için alarm çalmaz.' : ` — ${saat}'de alarm çalar.`));
+    }
+  };
+  $('#modal2').classList.add('on');
+}
+function isSil(o) {
+  const k = o.tur === 'R' ? 'R|' + o.id : 'G|' + o.ds + '|' + o.id, eski = B.get('serbest', k);
+  B.yaz([{ s: 'serbest', k, v: null }]); ciz();
+  toast(o.tur === 'R' ? 'Rutin silindi (her gün için).' : 'Silindi.', () => { B.yaz([{ s: 'serbest', k, v: eski }]); ciz(); });
+}
+function isMenu(v, e) {
+  const [tur, id, ds] = v.split('|'), o = { tur, id, ds }, x = gunIsleri(parseD(ds)).find(y => y.id === id); if (!x) return;
+  const z = x.saat ? new Date(parseD(ds).getFullYear(), parseD(ds).getMonth(), parseD(ds).getDate(), +x.saat.slice(0, 2), +x.saat.slice(3)) : null, ak = z ? anahtarZ(z) + '|GR:' + id : null;
+  const it = [{ h: (tur === 'R' ? '🔁 Rutin · ' : '') + x.ad + (x.saat ? ' · ' + x.saat : '') },
+  { t: x.yap ? '↩ Yapılmadı yap' : '✓ Yaptım', f: () => isTik(ds, id) },
+  { t: '✏ Düzenle', f: () => isDuzenle(o) }];
+  if (ak && !x.yap && z > new Date()) it.push({ t: B.get('atlanan', ak) ? '🔔 Bugünkü alarmı geri aç' : '🔕 Bugünkü alarmı atla', f: () => { B.yaz([{ s: 'atlanan', k: ak, v: B.get('atlanan', ak) ? null : true }]); ciz(); } });
+  it.push('-', { t: tur === 'R' ? '🗑 Rutini sil (her gün için)' : '🗑 Sil', c: 'r', f: () => isSil(o) });
+  menuAc(it, e);
+}
+function rutinListe() {
+  const mb = $('#mbox2'); mb.onclick = null; mb.classList.add('dar');
+  const L = rutinler();
+  mb.innerHTML = `<h2>🔁 Günlük rutin</h2><p class="mut sm">Her gün (ya da seçtiğin günlerde) tekrar eder. Saati olanlar o saatte bilgisayarda MJ ile çalar.</p>
+    ${L.map(r => `<div class="br" style="cursor:pointer" data-rut="${r.id}"><span class="t">${r.saat || '—'}</span><span class="n">${esc(r.ad)}</span><span class="mut sm">${r.gun && r.gun.length ? r.gun.map(i => GUNK[i]).join(' ') : 'her gün'}</span><span class="btn sm">✏</span></div>`).join('') || '<div class="bos">Henüz rutin yok.</div>'}
+    <div class="row" style="margin-top:14px"><span class="sp"></span><button class="btn" id="rutkap">Kapat</button><button class="btn pri" id="rutyeni">＋ Yeni rutin</button></div>`;
+  mb.onclick = ev => {
+    const r = ev.target.closest('[data-rut]'); if (r) { isDuzenle({ tur: 'R', id: r.dataset.rut }); return; }
+    if (ev.target.id === 'rutyeni') { isDuzenle({ tur: 'R', yeni: 1 }); return; }
+    if (ev.target.id === 'rutkap') { $('#modal2').classList.remove('on'); mb.onclick = null; }
+  };
+  $('#modal2').classList.add('on');
+}
+
+/* ====== BILGISAYAR: alarm programi ile esitleme (127.0.0.1:47800) ======
+   Dilay Takip bilgisayarda acikken alarm programinin verilerini bulutla eslestirir (eskiden YKS App yapiyordu).
+   Alarm, muzik ve ilac bilgisi yine sadece bu bilgisayarda ve Dilay'in bulut alaninda kalir. */
+const KOPRU = 'http://127.0.0.1:47800', KSENK = ['plan', 'takip', 'kapali', 'ilac', 'serbest', 'ses', 'atlanan'], KSINIR = '2026-11-09';
+let kopru = null, kopruMesgul = false, kopruZ = null, kopruSon = null;
+const masaustuMu = () => !iPhoneMu() && !/Android|Mobile/.test(navigator.userAgent);
+function kopruUygun(s, k) {
+  if (['ilac', 'serbest', 'ses', 'atlanan'].includes(s)) return true;
+  if (s === 'kapali' && /^W\|/.test(k)) return true;
+  if (!/^\d{4}-\d\d-\d\d\|/.test(k) || k < KSINIR) return false;
+  return s !== 'plan' || /^\d{4}-\d\d-\d\d\|\d+$/.test(k);
+}
+// kuru = true: hicbir sey yazmadan ne degisecegini dondurur (test)
+async function kopruSenk(kuru) {
+  if (!DILAY() || GOMULU || !masaustuMu() || kopruMesgul || (B.TEST && !kuru)) return null;
+  kopruMesgul = true;
+  try {
+    const r = await fetch(KOPRU + '/api/data', { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status);
+    const V = await r.json(); kopru = true; kopruSon = new Date();
+    ['plan', 'takip', 'kapali', 'serbest', 'ses', 'ilac'].forEach(k => { if (!V[k] || Array.isArray(V[k])) V[k] = {}; });
+    const at = {}; (V.atlanan || []).forEach(k => at[k] = true); V.atlanan = at;
+    const A2 = V.ayar || {}; ['varsayilanSessiz', 'ilaclar', 'kutuAdlari', 'gunAdlari', 'serbestAdlari', 'ayarListesi'].forEach(k => { if (!Array.isArray(A2[k])) A2[k] = A2[k] ? [A2[k]] : []; });
+    if (!A2.isinma || Array.isArray(A2.isinma)) A2.isinma = {};
+    let base = {}; try { base = JSON.parse(localStorage.getItem('dt_kopru_base') || '{}'); } catch (e) { }
+    const pc = [], bulut = [];
+    for (const s of KSENK) {
+      const L = V[s] || {}, C = B.hepsi(s);
+      for (const k of new Set([...Object.keys(L), ...Object.keys(C)])) {
+        if (!kopruUygun(s, k)) continue;
+        const ls = JSON.stringify(L[k] === undefined ? null : L[k]), cs = JSON.stringify(C[k] === undefined ? null : C[k]), bk = s + '|' + k, bs = base[bk] === undefined ? 'null' : base[bk];
+        if (ls === cs) { base[bk] = ls; continue; }
+        if (cs === bs) { bulut.push({ s, k, v: JSON.parse(ls) }); base[bk] = ls; }
+        else if (ls === bs) { pc.push({ s, k, v: JSON.parse(cs) }); base[bk] = cs; }
+        else if (s === 'plan') { pc.push({ s, k, v: JSON.parse(cs) }); base[bk] = cs; }
+        else { bulut.push({ s, k, v: JSON.parse(ls) }); base[bk] = ls; }
+      }
+    }
+    const ozel = { program: V.program, ayar: A2, turler: V.turler, yapilacak: V.yapilacak, uyanis: V.uyanis };
+    Object.keys(ozel).forEach(k => { if (ozel[k] !== undefined && JSON.stringify(B.get('ozel', k)) !== JSON.stringify(ozel[k])) bulut.push({ s: 'ozel', k, v: ozel[k] }); });
+    if (kuru) return { pc, bulut };
+    localStorage.setItem('dt_kopru_base', JSON.stringify(base));
+    if (pc.length) { const y = await fetch(KOPRU + '/api/set', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ ops: pc.map(o => ({ s: o.s, k: o.k, v: o.v === undefined ? null : o.v })) }) }); if (!y.ok) throw new Error('set ' + y.status); }
+    if (bulut.length) { await B.yaz(bulut); if (['bugun', 'ilac', 'alarm', 'plan'].includes(tab) && !$('#modal').classList.contains('on') && !$('#modal2').classList.contains('on') && !yaziyor()) ciz(); }
+    return { pc, bulut };
+  } catch (e) { if (kopru !== false) { kopru = false; if (tab === 'bugun') ciz(); } return null; }
+  finally { kopruMesgul = false; }
+}
+const kopruSonra = () => { clearTimeout(kopruZ); kopruZ = setTimeout(() => kopruSenk(), 900); };
+function kopruBasla() {
+  if (!DILAY() || GOMULU || B.TEST || !masaustuMu()) return;
+  kopruSenk();
+  setInterval(() => { if (!kopruMesgul) B.cek().then(() => kopruSenk()); }, 20000);
+  B.on(n => { if (n.yerel && kopru) kopruSonra(); });
+}
+function kopruNotu() {
+  if (!masaustuMu() || GOMULU || B.TEST || kopru !== false) return '';
+  return `<div class="card sm" style="margin-top:10px;border-color:var(--y)">⚠ Bu bilgisayardaki alarm programına ulaşılamıyor; değişiklikler alarmlara gitmiyor. Alarm programı açık mı? (Tepside saat simgesi.) Tarayıcı "yerel ağdaki cihazlara erişim" izni sorarsa <b>İzin ver</b>'e bas.</div>`;
 }
 let ilacGunT = 10;
 function cizIlacT() {
@@ -525,7 +746,17 @@ document.addEventListener('click', e => {
   const at = e.target.closest('[data-atla]');
   if (at) { const k = at.dataset.atla; B.yaz([{ s: 'atlanan', k, v: B.get('atlanan', k) ? null : true }]); ciz(); return; }
   const sp = e.target.closest('[data-sbp]');
-  if (sp) { const k = sp.dataset.sbp, A2 = OZ('ayar') || {}; adSor('Serbest mola', 'Bu 1 saatte ne yapacaksın?', B.get('serbest', k) || '', A2.serbestAdlari || []).then(v => { if (v != null) { B.yaz([{ s: 'serbest', k: k + '|T', v: null }, { s: 'serbest', k, v: v || null }]); ciz(); } }); }
+  if (sp) { const k = sp.dataset.sbp, A2 = OZ('ayar') || {}; adSor('Serbest mola', 'Bu 1 saatte ne yapacaksın?', B.get('serbest', k) || '', A2.serbestAdlari || []).then(v => { if (v != null) { B.yaz([{ s: 'serbest', k: k + '|T', v: null }, { s: 'serbest', k, v: v || null }]); ciz(); } }); return; }
+  const it = e.target.closest('[data-istik]'); if (it) { const [ds, id] = it.dataset.istik.split('|'); isTik(ds, id); return; }
+  const im = e.target.closest('[data-ismenu]'); if (im) { isMenu(im.dataset.ismenu, e); return; }
+  const ie = e.target.closest('[data-isekle]'); if (ie) { isDuzenle({ saat: ie.dataset.isekle }); return; }
+  const ir = e.target.closest('.br.is[data-is]'); if (ir && !e.target.closest('button')) { const [tur, id, ds] = ir.dataset.is.split('|'); isDuzenle({ tur, id, ds }); return; }
+});
+// sag tik: gun basligi -> gunu isaretle; yapacaklarim satiri -> menu
+document.addEventListener('contextmenu', e => {
+  if (!DILAY()) return;
+  const g = e.target.closest('[data-gd]'); if (g) { e.preventDefault(); gunMenu(parseD(g.dataset.gd), e); return; }
+  const ir = e.target.closest('.br.is[data-is]'); if (ir) { e.preventDefault(); isMenu(ir.dataset.is, e); }
 });
 document.addEventListener('change', e => {
   if (e.target.dataset.sesk && DILAY()) { B.yaz([{ s: 'ses', k: e.target.dataset.sesk, v: e.target.checked }]); }
@@ -615,6 +846,9 @@ app.addEventListener('click', e => {
     case 'atamaiptal': atanacak = null; ciz(); kaynakPanelCiz(); break;
     case 'seciptal': secili = null; ciz(); break;
     case 'temizmenu': temizMenu(e); break;
+    case 'gunmenu': gunMenu(parseD(t.dataset.gd), e); break;
+    case 'isekle': isDuzenle({}); break;
+    case 'rutinler': rutinListe(); break;
     case 'guntemizle': { const d = addD(hafta, +t.dataset.g); temizleF(ds => ds === dk(d), `${GUN[gi(d)]} ${tarihK(d)} gününün`); break; }
     case 'dsek': dSek = t.dataset.v; ciz(); break;
     case 'htur': hTur = t.dataset.v; ciz(); break;

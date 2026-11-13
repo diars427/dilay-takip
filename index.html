@@ -197,7 +197,7 @@ main.oniz::before{content:'👁 Önizleme: paylaştığın kişiler uygulamayı 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="bulut.js"></script>
-<script src="kaynak-veri.js?v=26"></script>
+<script src="kaynak-veri.js?v=27"></script>
 <script src="deneme-veri.js"></script>
 <script>
 'use strict';
@@ -1173,12 +1173,12 @@ function hataTumu(L) {
     Object.keys(m).map(Number).sort((x, y) => x - y).forEach(q => {
       const v = m[q]; if (!TURAD[v]) return;
       const ders = (alt.find(z => q >= z[1] && q <= z[2]) || [a])[0], k = soruKey(r.id, a, q), s = B.get('soru', k) || {};
-      o.push({ k, r, a, q, v, ders, grup: s.grup || varsayilanGrup(r, ders), konu: s.konu || '', s, kn: B.get('sorunot', k), baslik: ders + ' · ' + q + '. soru', kaynak: r.ad });
+      o.push({ k, r, a, q, v, ders, grup: etkinGrup(k, s.grup || varsayilanGrup(r, ders)), konu: etkinKonu(k, s.konu || ''), s, kn: B.get('sorunot', k), baslik: ders + ' · ' + q + '. soru', kaynak: r.ad });
     });
   }));
   Object.entries(B.hepsi('hata')).forEach(([id, x]) => {
     if (!x || x.sil) return; const k = 'h|' + id;
-    o.push({ k, manuel: true, id, v: x.tur || 'y', grup: x.grup || '', konu: x.konu || '', s: { img: x.img, not: x.not }, kn: B.get('sorunot', k), baslik: x.grup || 'Soru', kaynak: DILAY() ? (x.kaynak || 'Kendi eklediğim soru') : 'Eklenen soru' });
+    o.push({ k, manuel: true, id, v: x.tur || 'y', grup: etkinGrup(k, x.grup || ''), konu: etkinKonu(k, x.konu || ''), s: { img: x.img, not: x.not, cimg: x.cimg }, kn: B.get('sorunot', k), baslik: x.grup || 'Soru', kaynak: DILAY() ? (x.kaynak || 'Kendi eklediğim soru') : 'Eklenen soru' });
   });
   return o;
 }
@@ -1197,7 +1197,8 @@ function cizHatalarim(L) {
     const tk = T[x.k];
     h += `<div class="pq" data-hk="${esc(x.k)}"><div class="pq-sol"><div class="row" style="margin-bottom:6px;gap:6px"><b>${esc(x.baslik)}</b><span class="chip ${x.v === 'b' ? 'y' : 'r'}" style="${x.v === 'k' ? 'background:#6b1f2a;color:#fff' : ''}">${TURAD[x.v]}</span><span class="mut sm">${esc(x.kaynak)}</span>${x.konu ? `<span class="chip b">${esc(x.konu)}</span>` : (DILAY() ? '<span class="chip noprint">konu seçilmedi</span>' : '')}${tk ? `<span class="chip noprint">tekrar: ${tk.d}✓ ${tk.y}✗</span>` : ''}<span class="sp"></span><label class="noprint sm row" style="gap:4px" data-nohq="1"><input type="checkbox" data-odsec="${esc(x.k)}" ${odevSec.has(x.k) ? 'checked' : ''}> ödeve ekle</label></div>
       ${x.s.f ? `<div class="soru">${guvenli(x.s.f)}</div>` : x.s.img ? `<div class="soru"><img src="${x.s.img}"></div>` : `<div class="mut sm" style="padding:10px;border:1px dashed var(--line);border-radius:8px">Soru görseli yok${DILAY() ? ' — dokun, fotoğraf ekle' : ''}</div>`}
-      ${x.s.not ? `<div class="sm" style="margin-top:6px"><b>${KOC() ? 'Dilay' : 'Notum'}:</b> ${esc(x.s.not)}</div>` : ''}${x.kn && x.kn.not ? `<div class="sm" style="margin-top:4px;color:var(--blue)"><b>${KOC() ? 'Senin notun' : 'Koç'}:</b> ${esc(x.kn.not)}</div>` : ''}</div>
+      <div class="noprint">${x.s.not || x.s.cimg ? `<div class="sm" style="margin-top:6px;color:var(--g2)"><b>✍ ${KOC() ? 'Dilay\'ın çözümü' : 'Çözümüm'}:</b> ${esc(x.s.not || '')}${x.s.cimg ? ' <span class="chip ok">📷 fotoğraf</span>' : ''}</div>` : `<div class="sm mut" style="margin-top:6px">✍ ${DILAY() ? 'Çözüm eklenmedi — dokun, çözüm ekle' : 'Çözüm yok'}</div>`}
+      ${x.kn && (x.kn.not || x.kn.cimg) ? `<div class="sm" style="margin-top:4px;color:var(--blue)"><b>💬 ${KOC() ? 'Senin notun / çözümün' : 'Koç'}:</b> ${esc(x.kn.not || '')}${x.kn.cimg ? ' <span class="chip b">📷 çözüm fotoğrafı</span>' : ''}</div>` : ''}</div></div>
       <div class="pq-bos"><span>Tekrar çöz</span></div></div>`;
   });
   return h;
@@ -1205,24 +1206,25 @@ function cizHatalarim(L) {
 // elle hata ekle / duzenle (hangi denemeden oldugu sadece Dilay'da gorunur)
 function hataDuzenle(id) {
   const x = id ? Object.assign({}, B.get('hata', id)) : { tur: 'y', grup: hGrup, konu: hKonu }, k = id ? 'h|' + id : null, ro = !DILAY();
+  const g0 = k ? etkinGrup(k, x.grup || '') : (x.grup || ''), c0 = k ? etkinKonu(k, x.konu || '') : (x.konu || '');
   const bx = $('#mbox2'); bx.onclick = null; bx.classList.remove('dar');
   bx.innerHTML = `<div class="mh"><b style="font-size:16px">${id ? (ro ? 'Soru' : 'Hatayı düzenle') : 'Hata ekle'}</b><span class="sp"></span><button class="btn" id="hxk">✕</button></div>
     ${ro ? '' : `<div class="mut sm" style="margin:8px 0 4px">Hangi denemeden / kaynaktan? <span style="opacity:.7">(sadece sen görürsün)</span></div><input type="text" id="hxs" value="${esc(x.kaynak || '')}" placeholder="ör. Limit TYT 2 · 12. soru">`}
     <div class="mut sm" style="margin:10px 0 4px">Hata türü</div><div class="chips" style="margin:0">${['y', 'k', 'b'].map(v => `<button class="${x.tur === v ? 'on' : ''}" data-hxt="${v}" ${ro ? 'disabled' : ''}>${TURAD[v]}</button>`).join('')}</div>
-    <div class="mut sm" style="margin:10px 0 4px">Ders ve konu</div><div class="row">${konuSec('hx', x.grup || '', x.konu || '', ro)}</div>
+    <div class="mut sm" style="margin:10px 0 4px">Ders ve konu${KOC() ? ' <span style="opacity:.75">(yanlışsa düzeltebilirsin)</span>' : k && hataEk(k).grup ? ' <span style="color:var(--blue)">(koç düzeltti)</span>' : ''}</div><div class="row">${konuSec('hx', g0, c0, ro && !k)}</div>
     ${x.img ? `<div class="soru" style="margin-top:10px"><img src="${x.img}"></div>` : ''}
-    ${ro ? '' : `<label class="btn sm" style="margin-top:10px;display:inline-block">📷 ${x.img ? 'Fotoğrafı değiştir' : 'Soru fotoğrafı ekle'}<input type="file" id="hxi" accept="image/*" hidden></label>`}
-    <div class="mut sm" style="margin:10px 0 4px">${KOC() ? 'Dilay\'ın notu' : 'Notun'}</div><textarea id="hxn" ${ro ? 'readonly' : ''} style="min-height:70px">${esc(x.not || '')}</textarea>
-    ${id ? `<div class="mut sm" style="margin:10px 0 4px;color:var(--blue)">${KOC() ? 'Senin notun' : 'Koçun notu'}</div><textarea id="hxkn" ${KOC() ? '' : 'readonly'} style="min-height:56px">${esc((B.get('sorunot', k) || {}).not || '')}</textarea>` : ''}
+    ${ro ? '' : `<label class="btn sm" style="margin-top:10px;display:inline-block">📷 ${x.img ? 'Soru fotoğrafını değiştir' : 'Soru fotoğrafı ekle'}<input type="file" id="hxi" accept="image/*" hidden></label>`}
+    ${k ? cozumBolum(k, x.not, x.cimg) : `<div class="mut sm" style="margin:12px 0 4px;color:var(--g2);font-weight:700">✍ Çözümüm</div><textarea id="cznot" style="min-height:70px" placeholder="Çözümü yaz… (fotoğrafını kaydettikten sonra ekleyebilirsin)">${esc(x.not || '')}</textarea>`}
     <div class="row" style="margin-top:12px">${id && !ro ? '<button class="btn no" id="hxsil">🗑 Sil</button>' : ''}<span class="sp"></span><button class="btn ok" id="hxt">Kaydet</button></div>`;
   $('#modal2').classList.add('on');
   bx.querySelectorAll('[data-hxt]').forEach(b => b.onclick = () => { x.tur = b.dataset.hxt; bx.querySelectorAll('[data-hxt]').forEach(c => c.classList.toggle('on', c === b)); });
   const fi = $('#hxi'); if (fi) fi.onchange = () => { if (fi.files[0]) resim(fi.files[0], 1000, .78, u => { x.img = u; toast('Fotoğraf eklendi, Kaydet\'e bas.'); }); };
   $('#hxk').onclick = () => $('#modal2').classList.remove('on');
   const sil = $('#hxsil'); if (sil) sil.onclick = async () => { if (!await onayla('Bu hata silinsin mi?')) return; B.yaz([{ s: 'hata', k: id, v: Object.assign(x, { sil: true }) }]); ciz(); };
+  if (k) cozumFoto(k, o => B.yaz([{ s: 'hata', k: id, v: Object.assign({}, B.get('hata', id) || {}, o) }]), () => hataDuzenle(id));
   $('#hxt').onclick = () => {
-    if (KOC()) { if (k) B.yaz([{ s: 'sorunot', k, v: { not: $('#hxkn').value } }]); }
-    else { Object.assign(x, { kaynak: $('#hxs').value.trim(), grup: bx.querySelector('[data-kg="hx"]').value, konu: bx.querySelector('[data-kk="hx"]').value, not: $('#hxn').value }); B.yaz([{ s: 'hata', k: id || 'h' + Date.now().toString(36), v: x }]); }
+    if (KOC()) { if (k) kocKaydet(k, bx, 'hx', g0, c0); }
+    else { const g = bx.querySelector('[data-kg="hx"]').value, c = bx.querySelector('[data-kk="hx"]').value; Object.assign(x, { kaynak: $('#hxs').value.trim(), grup: g, konu: c, not: $('#cznot').value }); B.yaz([{ s: 'hata', k: id || 'h' + Date.now().toString(36), v: x }]); if (k) kocKonuEsitle(k, g, c); }
     $('#modal2').classList.remove('on'); toast('Kaydedildi.'); ciz();
   };
 }
@@ -1526,32 +1528,62 @@ function guvenli(html) {
   d.querySelectorAll('*').forEach(e => [...e.attributes].forEach(at => { if (/^on/i.test(at.name) || (/^(href|src)$/i.test(at.name) && /^\s*javascript:/i.test(at.value))) e.removeAttribute(at.name); }));
   return d.body.firstChild.innerHTML;
 }
+/* Cozum + koc bolumu (soru ve elle eklenen hata pencerelerinde ortak)
+   Dilay'in cozumu: soru/hata kaydinda not (yazi) + cimg (foto).
+   Koc: sorunot[k] = { not, cimg, grup, konu } -> kendi notu / cozumu ve konu duzeltmesi (Dilay'in kaydina yazamaz). */
+const hataEk = k => B.get('sorunot', k) || {};
+const etkinGrup = (k, g) => { const e = hataEk(k); return e.grup ? e.grup : g; };
+const etkinKonu = (k, c) => { const e = hataEk(k); return e.grup ? (e.konu || '') : c; };
+function cozumBolum(k, not, cimg) {
+  const e = hataEk(k), d = DILAY();
+  return `<div class="mut sm" style="margin:12px 0 4px;color:var(--g2);font-weight:700">✍ ${d ? 'Çözümüm' : 'Dilay\'ın çözümü'}</div>
+    <textarea id="cznot" ${d ? '' : 'readonly'} placeholder="${d ? 'Çözümü yaz… (ya da fotoğrafını ekle)' : '—'}" style="min-height:70px">${esc(not || '')}</textarea>
+    ${cimg ? `<details class="cozum" open><summary style="cursor:pointer;font-weight:700;color:var(--g2)">Çözüm fotoğrafı</summary><img src="${cimg}"></details>` : ''}
+    ${d ? `<label class="btn sm" style="margin-top:6px;display:inline-block">📷 ${cimg ? 'Çözüm fotoğrafını değiştir' : 'Çözüm fotoğrafı ekle'}<input type="file" accept="image/*" hidden id="czimg"></label>${cimg ? ' <button class="btn sm no" data-czsil="d">Fotoğrafı kaldır</button>' : ''}` : ''}
+    <div class="mut sm" style="margin:12px 0 4px;color:var(--blue);font-weight:700">💬 ${KOC() ? 'Senin notun / çözümün' : 'Koçun notu / çözümü'}</div>
+    <textarea id="sknot" ${KOC() ? '' : 'readonly'} placeholder="${KOC() ? 'Dilay için not ya da çözüm…' : '—'}" style="min-height:60px">${esc(e.not || '')}</textarea>
+    ${e.cimg ? `<details class="cozum" open><summary style="cursor:pointer;font-weight:700;color:var(--blue)">${KOC() ? 'Senin çözüm fotoğrafın' : 'Koçun çözüm fotoğrafı'}</summary><img src="${e.cimg}"></details>` : ''}
+    ${KOC() ? `<label class="btn sm" style="margin-top:6px;display:inline-block">📷 ${e.cimg ? 'Çözüm fotoğrafını değiştir' : 'Çözüm fotoğrafı ekle'}<input type="file" accept="image/*" hidden id="skimg"></label>${e.cimg ? ' <button class="btn sm no" data-czsil="k">Fotoğrafı kaldır</button>' : ''}` : ''}`;
+}
+// koc kaydi: not + (degistiyse) konu
+function kocKaydet(k, bx, on, g0, c0) {
+  const e = Object.assign({}, hataEk(k), { not: $('#sknot').value }), g = bx.querySelector(`[data-kg="${on}"]`).value, c = bx.querySelector(`[data-kk="${on}"]`).value;
+  if (g !== g0 || c !== c0) { e.grup = g; e.konu = c; }
+  B.yaz([{ s: 'sorunot', k, v: e }]);
+}
+// Dilay konuyu degistirince kocun eski duzeltmesi de ayni olsun
+function kocKonuEsitle(k, g, c) { const e = hataEk(k); if (e.grup && (e.grup !== g || (e.konu || '') !== c)) B.yaz([{ s: 'sorunot', k, v: Object.assign({}, e, { grup: g, konu: c }) }]); }
+function cozumFoto(k, kayit, yenile) {
+  const d = $('#czimg'); if (d) d.onchange = () => { if (!d.files[0]) return; resim(d.files[0], 1000, .78, u => { kayit({ cimg: u, not: $('#cznot').value }); yenile(); }); };
+  const kf = $('#skimg'); if (kf) kf.onchange = () => { if (!kf.files[0]) return; resim(kf.files[0], 1000, .78, u => { B.yaz([{ s: 'sorunot', k, v: Object.assign({}, hataEk(k), { cimg: u, not: $('#sknot').value }) }]); yenile(); }); };
+  document.querySelectorAll('#mbox2 [data-czsil]').forEach(b => b.onclick = ev => { ev.stopPropagation(); if (b.dataset.czsil === 'd') kayit({ cimg: null, not: $('#cznot').value }); else B.yaz([{ s: 'sorunot', k, v: Object.assign({}, hataEk(k), { cimg: null, not: $('#sknot').value }) }]); yenile(); });
+}
 function soruAc(id, a, q, durum) {
   const k = soruKey(id, a, q), s = B.get('soru', k) || {}, ro = !DILAY();
-  const rr = denemeler().find(x => x.id === id) || { t: 'TYT' }, al = (alanlar(rr).find(z => z[0] === a) || [a, 0, [[a, 1, 999]]])[2], drs = (al.find(z => q >= z[1] && q <= z[2]) || [a])[0], sg = s.grup || varsayilanGrup(rr, drs);
+  const rr = denemeler().find(x => x.id === id) || { t: 'TYT' }, al = (alanlar(rr).find(z => z[0] === a) || [a, 0, [[a, 1, 999]]])[2], drs = (al.find(z => q >= z[1] && q <= z[2]) || [a])[0];
+  const sg = etkinGrup(k, s.grup || varsayilanGrup(rr, drs)), sk = etkinKonu(k, s.konu || '');
   const bx = $('#mbox2'); bx.classList.remove('dar');
   bx.innerHTML = `<div class="mh"><b style="font-size:16px">${esc(a)} · ${q}. soru</b>${durum === 'y' ? '<span class="chip r">Yanlış</span>' : durum === 'k' ? '<span class="chip" style="background:#6b1f2a;color:#fff">Dikkat hatası</span>' : durum === 'b' ? '<span class="chip y">Boş</span>' : '<span class="chip">Yapamadığım soru</span>'}<span class="sp"></span><button class="btn" data-s="kapat">✕</button></div>
     ${s.f ? `<div class="soru">${guvenli(s.f)}</div>` : ''}
     ${s.img ? `<div class="soru"><img src="${s.img}"></div>` : ''}
     ${!s.f && !s.img ? `<div class="mut" style="margin:8px 0">Bu sorunun görseli yok.${ro ? '' : ' Fotoğrafını çekip ekleyebilirsin.'}</div>` : ''}
-    ${s.b ? `<details class="cozum" ${ro ? '' : ''}><summary style="cursor:pointer;font-weight:700;color:var(--blue)">Çözüm / cevap</summary><div style="margin-top:8px">${guvenli(s.b)}</div></details>` : ''}
-    <div class="mut sm" style="margin:10px 0 4px">Ders ve konu</div><div class="row">${konuSec('sq', sg, s.konu || '', ro)}</div>
-    <div class="mut sm" style="margin:10px 0 4px">Dilay'ın notu ${ro ? '' : '(neden yapamadım, ne öğrendim)'}</div>
-    <textarea id="snot" ${ro ? 'readonly' : ''} placeholder="${ro ? '—' : 'Notun…'}" style="min-height:70px">${esc(s.not || '')}</textarea>
-    <div class="mut sm" style="margin:10px 0 4px;color:var(--blue)">${KOC() ? 'Senin notun' : 'Koçun notu'}</div>
-    <textarea id="sknot" ${KOC() ? '' : 'readonly'} placeholder="${KOC() ? 'Dilay için not…' : '—'}" style="min-height:60px">${esc((B.get('sorunot', k) || {}).not || '')}</textarea>
-    <div class="row" style="margin-top:8px">${ro ? '' : `<label class="btn sm">📷 ${s.img ? 'Fotoğrafı değiştir' : 'Soru fotoğrafı ekle'}<input type="file" accept="image/*" hidden id="simg"></label>`}<span class="sp"></span><button class="btn ok" data-s="kaydet">Kaydet</button></div>`;
+    ${ro ? '' : `<label class="btn sm" style="margin-top:6px;display:inline-block">📷 ${s.img ? 'Soru fotoğrafını değiştir' : 'Soru fotoğrafı ekle'}<input type="file" accept="image/*" hidden id="simg"></label>`}
+    ${s.b ? `<details class="cozum"><summary style="cursor:pointer;font-weight:700;color:var(--blue)">Kitabın çözümü / cevap</summary><div style="margin-top:8px">${guvenli(s.b)}</div></details>` : ''}
+    <div class="mut sm" style="margin:10px 0 4px">Ders ve konu${KOC() ? ' <span style="opacity:.75">(yanlışsa düzeltebilirsin)</span>' : hataEk(k).grup ? ' <span style="color:var(--blue)">(koç düzeltti)</span>' : ''}</div><div class="row">${konuSec('sq', sg, sk, false)}</div>
+    ${cozumBolum(k, s.not, s.cimg)}
+    <div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn ok" data-s="kaydet">Kaydet</button></div>`;
   $('#modal2').classList.add('on');
   bx.onclick = e => {
     const t = e.target.closest('[data-s]'); if (!t) return;
     if (t.dataset.s === 'kapat') { soruKapat(); return; }
     if (t.dataset.s === 'kaydet') {
-      if (KOC()) B.yaz([{ s: 'sorunot', k, v: { not: $('#sknot').value } }]);
-      else B.yaz([{ s: 'soru', k, v: Object.assign({}, B.get('soru', k) || {}, { not: $('#snot').value, grup: bx.querySelector('[data-kg="sq"]').value, konu: bx.querySelector('[data-kk="sq"]').value }) }]);
+      if (KOC()) kocKaydet(k, bx, 'sq', sg, sk);
+      else { const g = bx.querySelector('[data-kg="sq"]').value, c = bx.querySelector('[data-kk="sq"]').value; B.yaz([{ s: 'soru', k, v: Object.assign({}, B.get('soru', k) || {}, { not: $('#cznot').value, grup: g, konu: c }) }]); kocKonuEsitle(k, g, c); }
       toast('Kaydedildi.'); soruKapat(); if (tab === 'deneme' && dSek !== 'liste') ciz();
     }
   };
-  const fi = $('#simg'); if (fi) fi.onchange = () => { if (!fi.files[0]) return; resim(fi.files[0], 900, .75, u => { const v = Object.assign({}, B.get('soru', k) || {}, { img: u, not: $('#snot').value }); B.yaz([{ s: 'soru', k, v }]); soruAc(id, a, q, durum); }); };
+  const fi = $('#simg'); if (fi) fi.onchange = () => { if (!fi.files[0]) return; resim(fi.files[0], 900, .75, u => { const v = Object.assign({}, B.get('soru', k) || {}, { img: u, not: $('#cznot').value }); B.yaz([{ s: 'soru', k, v }]); soruAc(id, a, q, durum); }); };
+  cozumFoto(k, o => B.yaz([{ s: 'soru', k, v: Object.assign({}, B.get('soru', k) || {}, o) }]), () => soruAc(id, a, q, durum));
 }
 function soruKapat() { $('#modal2').classList.remove('on'); $('#mbox2').classList.add('dar'); $('#mbox2').onclick = null; if (DN) { const st = $('#modal').scrollTop; denemeCiz(); $('#modal').scrollTop = st; } }
 function scriptYukle(src) { return new Promise((r, h) => { const s = document.createElement('script'); s.src = src; s.onload = r; s.onerror = h; document.body.appendChild(s); }); }

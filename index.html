@@ -273,7 +273,7 @@ function hazir() {
   ciz();
   B.cek().then(async () => { if (!DILAY()) return;   // ilk acilista bir kez (bulutta deneme yoksa) eski takipten aktar
     kopruBasla();
-    await ilkAktarim(); const n = await soruAktar(); if (n) { toast(`Yapamadığın ${n} soru aktarıldı.`); ciz(); } const nn = await notlarAktar(); if (nn) { toast(nn + ' not aktarıldı.'); ciz(); } });
+    await ilkAktarim(); const n = await soruAktar(); if (n) { toast(`Yapamadığın ${n} soru aktarıldı.`); ciz(); } const nn = await notlarAktar(); if (nn) { toast(nn + ' not aktarıldı.'); ciz(); } const en = await ekNotlar(); if (en) { toast(en + ' yeni not eklendi (Notlar).'); ciz(); } });
   setInterval(() => { if (document.visibilityState === 'visible') B.cek(); }, 15000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') B.cek(); });
   window.addEventListener('online', () => B.cek());
@@ -1413,6 +1413,16 @@ async function notDuzenle(id) {
   };
 }let eskiSOnbellek = null;
 async function eskiS() { if (eskiSOnbellek) return eskiSOnbellek; let S = null; const ham = await idbEski(); if (ham) { try { S = JSON.parse(ham); } catch (e) { } } if (!S) { try { const l = localStorage.getItem('yks27'); if (l) S = JSON.parse(l); } catch (e) { } } return eskiSOnbellek = S || {}; }
+// sonradan eklenen hazir notlar (ek-notlar.js): sadece Dilay, her surum bir kez; buluta olmayanlari yazar (silinmis olan geri gelmez)
+const EKNOT_V = '1';
+async function ekNotlar() {
+  if (!DILAY() || localStorage.getItem(AK('dt_eknot')) === EKNOT_V) return 0;
+  try { await scriptYukle('ek-notlar.js?v=' + EKNOT_V); } catch (e) { return 0; }
+  const var_ = B.hepsi('not'), ops = (window.EKNOT || []).filter(n => !var_[n.id]).map(n => { const v = Object.assign({}, n); delete v.id; return { s: 'not', k: n.id, v }; });
+  for (let i = 0; i < ops.length; i += 3) await B.yaz(ops.slice(i, i + 3));
+  localStorage.setItem(AK('dt_eknot'), EKNOT_V);
+  return ops.length;
+}
 async function notlarAktar() {
   if (!DILAY() || localStorage.getItem(AK('dt_not_aktarildi')) || Object.keys(B.hepsi('not')).length) return 0;
   try { if (!window.DGEO) await scriptYukle('notlar-veri.js'); } catch (e) { return 0; }

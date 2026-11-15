@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="tr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>YKS Dilay Takip</title>
@@ -197,7 +197,7 @@ main.oniz::before{content:'👁 Önizleme: paylaştığın kişiler uygulamayı 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="bulut.js"></script>
-<script src="kaynak-veri.js?v=27"></script>
+<script src="kaynak-veri.js?v=28"></script>
 <script src="deneme-veri.js"></script>
 <script>
 'use strict';
@@ -417,7 +417,7 @@ function cizHafta() {
     for (let no = 1; no <= 12; no++) {
       const key = pKey(d, no), glob = NUM[key], t = tik(d, no), tm = hhmm(POM[no - 1]) + '–' + hhmm(POM[no - 1] + 45);
       if (sinav) { hc += `<div class="hc kk"><div class="hn"><span>${no}</span></div><div class="hp">sınav</div></div>`; continue; }
-      if (kutuKapali(d, no)) { hc += `<div class="hc kk ${t ? 'done' : ''}" title="${tm}"><div class="hn"><span>${no}</span><span class="mut">${hhmm(POM[no - 1])}</span></div><div class="hp">${esc(K()[key])}</div><div class="hs">${t ? 'tamamlandı' : 'kapalı · sayılmaz'}</div></div>`; continue; }
+      if (kutuKapali(d, no)) { hc += `<div class="hc kk ${t ? 'done' : ''}" data-kk="${key}" title="${tm}"><div class="hn"><span>${no}</span><span class="mut">${hhmm(POM[no - 1])}</span></div><div class="hp">${esc(K()[key])}</div><div class="hs">${t ? 'tamamlandı' : 'kapalı · sayılmaz'}</div></div>`; continue; }
       const oz = planOzet(key), akt = pomAktif(d, no);
       const dr = kap ? 'kapalı gün' : t ? '✓ Tamamlandı' : oz.length ? `Planlandı${oz.some(r => r.d) ? ' · ' + oz.filter(r => r.d).length + '/' + oz.length : ''}` : 'Planlanmadı';
       hc += `<div class="hc ${t ? 'done' : ''} ${akt || t ? '' : 'pasif'} ${oz.length ? '' : 'bos'} ${secili === key ? 'secili' : ''} ${atanacak || secili ? 'hedef' : ''}" data-k="${key}" draggable="true" title="${tm}">
@@ -893,7 +893,8 @@ app.addEventListener('dragend', () => { surukKey = null; document.querySelectorA
 // dokunmatik: basili tut = yer degistirmek icin sec
 app.addEventListener('touchstart', e => { const c = e.target.closest('.hc[data-k]'); if (!c) return; basiliOldu = false; clearTimeout(basiliZ); basiliZ = setTimeout(() => { basiliOldu = true; secili = c.dataset.k; atanacak = null; if (navigator.vibrate) navigator.vibrate(30); ciz(); toast('Seçildi. Yer değiştireceği pomodoroya dokun.'); }, 550); }, { passive: true });
 ['touchend', 'touchmove', 'touchcancel'].forEach(ev => app.addEventListener(ev, () => clearTimeout(basiliZ), { passive: true }));
-app.addEventListener('contextmenu', e => { const c = e.target.closest('.hc[data-k]'); if (!c) return; e.preventDefault(); hucreMenu(c.dataset.k, e); });
+app.addEventListener('contextmenu', e => { const kk = e.target.closest('.hc[data-kk]'); if (kk) { e.preventDefault(); kutuMenu(kk.dataset.kk, e); return; } const c = e.target.closest('.hc[data-k]'); if (!c) return; e.preventDefault(); hucreMenu(c.dataset.k, e); });
+app.addEventListener('click', e => { const kk = e.target.closest('.hc[data-kk]'); if (kk) kutuMenu(kk.dataset.kk, e); });
 
 function yerDegistir(a, b, geri) {
   if (a === b) return;
@@ -911,8 +912,24 @@ function hucreMenu(key, e) {
   { t: '🔀 Yer değiştirmek için seç', f: () => { secili = key; ciz(); } }];
   if (secili && secili !== key) it.push({ t: `🔀 Seçiliyle (#${globNo(secili)}) yer değiştir`, f: () => yerDegistir(secili, key) });
   if (P()[key]) it.push({ t: '🧹 Bu pomodoronun planını temizle', c: 'r', f: () => temizleKeys([key], `#${globNo(key)} pomodoronun planı`) });
-  if (DILAY()) { const k = tikKey(d, +no); it.push('-', { t: T()[k] ? '↩ Tamamlandı işaretini kaldır' : '✓ Tamamlandı', f: () => { B.yaz([{ s: 'takip', k, v: T()[k] ? null : true }]); ciz(); } }); }
+  if (DILAY()) { const k = tikKey(d, +no); it.push('-', { t: T()[k] ? '↩ Tamamlandı işaretini kaldır' : '✓ Tamamlandı', f: () => { B.yaz([{ s: 'takip', k, v: T()[k] ? null : true }]); ciz(); } }); kutuMenuOge(key, it); }
   menuAc(it, e);
+}
+/* ====== KUTU KAPATMA (sag tik): kapali[yyyy-mm-dd|no] = ad -> o pomodoro sayilmaz, alarmi calmaz ====== */
+const kutuAdlari = () => { const a = ['Uyku', 'Mola', 'Veteriner', 'Psikiyatri', 'Kapalı']; ((OZ('ayar') || {}).kutuAdlari || []).forEach(x => { if (x && !/ko[çc]/i.test(x) && !a.includes(x)) a.push(x); }); return a; };
+const kutuIkon = a => ({ 'Uyku': '😴', 'Mola': '☕', 'Veteriner': '🐾', 'Psikiyatri': '🩺', 'Kapalı': '⛔' }[a] || '📌');
+function kutuMenuOge(key, it) {
+  const [ds, no] = key.split('|'), d = parseD(ds), simdi = K()[key];
+  const ayarla = ad => { B.yaz([{ s: 'kapali', k: key, v: ad }]); ciz(); toast(ad ? `${no}. pomodoro: ${ad} — sayılmaz, alarmı çalmaz.` : `${no}. pomodoro tekrar açık.`, () => { B.yaz([{ s: 'kapali', k: key, v: simdi == null ? null : simdi }]); ciz(); }); };
+  it.push('-', { h: 'Pomodoroyu kapat' + (simdi ? ' · şu an: ' + simdi : '') });
+  kutuAdlari().forEach(a => it.push({ t: (simdi === a ? '● ' : '') + kutuIkon(a) + ' ' + a, f: () => ayarla(a) }));
+  it.push({ t: '✏ Başka bir ad yaz…', f: async () => { const a = await adSor('Pomodoroyu kapat', `${GUN[gi(d)]} ${tarihK(d)} · ${no}. pomodoro yapılmayacak (hedefe sayılmaz, alarmı çalmaz). Adı:`, simdi || '', kutuAdlari()); if (a) ayarla(a); } });
+  if (simdi != null) it.push({ t: '✅ Pomodoroyu aç', f: () => ayarla(null) });
+}
+function kutuMenu(key, e) {
+  if (!DILAY()) return;
+  const [ds, no] = key.split('|'), d = parseD(ds), it = [{ h: `${GUN[gi(d)]} ${tarihK(d)} · ${no}. pomodoro` }];
+  kutuMenuOge(key, it); menuAc(it, e);
 }
 function temizMenu(e) {
   const bg = dk(new Date()), wk = []; for (let g = 0; g < 7; g++) wk.push(dk(addD(hafta, g)));

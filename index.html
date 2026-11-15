@@ -964,7 +964,7 @@ function planCiz() {
     <div class="prow mut sm" style="margin:0"><span>✓</span><span style="text-align:center">Süre</span><span>Görev</span></div>${r}
     <div class="kpi" id="kpi" style="display:none"></div>
     <div class="row" style="margin-top:10px"><b id="pltop"></b><span class="mut" id="plil"></span><span class="sp"></span>
-      <button class="btn sm" data-m="s1">10·10·10·10·5</button><button class="btn sm" data-m="s2">15·15·15</button><button class="btn sm" data-m="s3">45</button>
+      <button class="btn sm" data-m="s1">20·20·5</button><button class="btn sm" data-m="s2">15·15·15</button><button class="btn sm" data-m="s3">45</button>
       <button class="btn sm pri" data-m="coklu">📚 Kaynaktan ekle</button><button class="btn sm" data-m="yer">🔀 Yer değiştir</button><button class="btn sm no" data-m="temiz">Temizle</button></div>
     ${DILAY() ? `<div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn ${on ? '' : 'ok'}" data-m="tamam" ${gec || on ? '' : 'disabled'} style="min-width:220px;padding:11px">${on ? 'TAMAMLANDI (geri al)' : gec ? 'Tamamlandı ✓' : 'Takipte sayılmaz'}</button></div>` : (on ? '<div class="chip ok" style="margin-top:10px">Dilay bu pomodoroyu tamamladı</div>' : '')}`;
   planOzetCiz();
@@ -1002,7 +1002,7 @@ mb.addEventListener('click', async e => {
   const m = t.dataset.m;
   if (m === 'kapat') return planKapat();
   if (m === 'once' || m === 'sonra') { let d = PL.d, n = PL.no + (m === 'once' ? -1 : 1); if (n < 1) { d = addD(d, -1); n = 12; } if (n > 12) { d = addD(d, 1); n = 1; } planKaydetHemen(); return planAc(d, n); }
-  if (m === 's1' || m === 's2' || m === 's3') { const L = m === 's1' ? [10, 10, 10, 10, 5] : m === 's2' ? [15, 15, 15] : [45]; PL.rows.forEach((r, i) => r.dk = i < L.length ? String(L[i]) : ''); PL.kirli = true; planKaydet(); return planCiz(); }
+  if (m === 's1' || m === 's2' || m === 's3') { const L = m === 's1' ? [20, 20, 5] : m === 's2' ? [15, 15, 15] : [45]; PL.rows.forEach((r, i) => r.dk = i < L.length ? String(L[i]) : ''); PL.kirli = true; planKaydet(); return planCiz(); }
   if (m === 'temiz') { if (!await onayla('Bu pomodoronun planı silinsin mi?')) return; PL.rows = PL.rows.map(() => ({ d: false, dk: '', ad: '' })); PL.kirli = true; planKaydetHemen(); return planCiz(); }
   if (m === 'yer') { const k = PL.key; planKapat(); secili = k; ciz(); toast('Seçildi. Yer değiştireceği pomodoroya dokun.'); return; }
   if (m === 'tamam') { planKaydetHemen(); B.yaz([{ s: 'takip', k: tikKey(PL.d, PL.no), v: T()[tikKey(PL.d, PL.no)] ? null : true }]); return planCiz(); }

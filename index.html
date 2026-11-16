@@ -179,7 +179,18 @@ table.tb{border-collapse:collapse;width:100%}table.tb td,table.tb th{padding:7px
 input[type=time]{background:var(--p2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit;font-size:16px}
 @media (max-width:1180px){.bgrid,.bgust{grid-template-columns:repeat(2,minmax(0,1fr))}.bcol{max-height:62vh}}
 @media (max-width:640px){.bgrid,.bgust{grid-template-columns:1fr}.bcol{max-height:none}}
-.pdfkap .soru{background:#fff;padding:0}.ib{width:100%;border:0;border-radius:8px;padding:9px 4px;font:700 12.5px system-ui,sans-serif;cursor:pointer;color:#fff;background:#3a4058}.ib.ok{background:#2a8f55}.ib.no{background:#9b3434}
+.pdfkap .soru{background:#fff;padding:0}.ib{width:100%;border:0;border-radius:8px;padding:9px 4px;font:700 12.5px system-ui,sans-serif;cursor:pointer;color:#fff;background:#3a4058}.ib.ok{background:#2a8f55}.ib.no{background:#9b3434}.ib.bos{background:transparent;border:1px dashed #3a4258;color:var(--mut);font-weight:400}.ib small{display:block;font-weight:400;font-size:10.5px;opacity:.85}
+table.iltb{min-width:560px}table.iltb th{text-align:center}table.iltb th.ilad{text-align:left;white-space:nowrap;width:130px}table.iltb th.bugun{color:var(--gold)}table.iltb td{padding:5px 4px}table.iltb .ib{min-height:40px}
+.rhaf{border-top:1px solid var(--line);margin-top:8px;padding-top:6px}.rhaf .rhb{display:flex;align-items:center;gap:6px;margin-bottom:4px}.rhaf .rhb b{flex:1;font-size:13px}
+table.rtb{border-collapse:collapse;width:100%;table-layout:fixed}table.rtb th,table.rtb td{padding:2px 1px;text-align:center;font-size:11.5px}table.rtb th{color:var(--mut);font-weight:600}table.rtb th.bugun{color:var(--gold)}table.rtb td.ad{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;padding-right:4px}table.rtb .ad i{font-style:normal;color:var(--mut);font-size:11px}
+.bgrid2{margin-top:10px;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)}
+@media (max-width:1180px){.bgrid2{grid-template-columns:repeat(2,minmax(0,1fr))}.bgrid2>.bcol:first-child{grid-column:1/-1}}
+@media (max-width:640px){.bgrid2{grid-template-columns:1fr}}
+table.evtb{border-collapse:collapse;width:100%;table-layout:fixed}table.evtb th,table.evtb td{padding:2px;font-size:11.5px;text-align:center;vertical-align:middle}table.evtb th{color:var(--mut);font-weight:600}table.evtb tr.bugun th{color:var(--gold)}table.evtb tr.bugun td{background:rgba(255,205,90,.06)}
+.ek{display:block;width:100%;min-height:32px;border-radius:6px;border:0;cursor:pointer;font:600 11px/1.2 system-ui,sans-serif;color:#fff;padding:3px 4px;white-space:normal;word-break:break-word}.ek.ok{background:#2a8f55}.ek.no{background:#9b3434}.ek.gel{background:transparent;border:1px dashed #3a4258;color:var(--ink)}
+table.evduz input{font-size:12px;padding:5px 6px;min-width:110px}
+.kav{width:118px;height:140px;margin:6px auto 8px;border:3px solid #6b7894;border-top-width:9px;border-radius:12px 12px 24px 24px;display:flex;flex-wrap:wrap-reverse;align-content:flex-start;justify-content:center;padding:6px;gap:3px;overflow:hidden;background:rgba(120,140,180,.06)}.kav i{width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe58a,#d9a520);display:block}
+.rk{display:block;width:100%;height:22px;border-radius:6px;border:0;cursor:pointer;font:700 12px system-ui,sans-serif;color:#fff;padding:0}.rk.ok{background:#2a8f55}.rk.no{background:#9b3434}.rk.gel{background:transparent;border:1px dashed #3a4258}.rk.yok{background:transparent;color:#4a5068;cursor:default}
 #nav{scrollbar-width:none}#nav::-webkit-scrollbar{display:none}
 .seg{display:inline-flex!important;background:#232a40;border-radius:99px;padding:3px;gap:2px;align-items:center}.seg button{border:0;background:none;color:#aab1c7;border-radius:99px;padding:4px 12px;font:700 12px system-ui,sans-serif;cursor:pointer}.seg button.on{background:#4f8cff;color:#fff}
 main.oniz::before{content:'👁 Önizleme: paylaştığın kişiler uygulamayı böyle görüyor';display:block;background:#2a2142;border:1px solid #b06cff;color:#fff;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:13px}
@@ -518,15 +529,20 @@ function cizBugun() {
   const yp = L.map(x => {
     if (x.sb) return `<div class="br sbm"><span class="t">${x.saat}</span><span class="n">☕ <span class="mut">Serbest mola</span>${x.ad ? ' — ' + esc(x.ad) : ''}</span><button class="btn sm" data-sbp="${dk(bg)}|${x.saat}">${x.ad ? 'değiştir' : 'planla'}</button><button class="btn sm" data-isekle="${x.saat}" title="Bu saate iş ekle">＋</button></div>`;
     const gec = x.saat && !x.yap && x.saat <= hm(now);
-    return `<div class="br is ${x.yap ? 'bitti' : ''}" data-is="${x.tur}|${x.id}|${x.ds}"><span class="cb ${x.yap ? 'on' : ''}" data-istik="${x.ds}|${x.id}">${x.yap ? '✓' : ''}</span><span class="t" style="${gec ? 'color:var(--r2)' : ''}">${x.saat || '—'}</span><span class="n" title="${esc(x.ad)}">${esc(x.ad)}</span>${x.tur === 'R' ? '<span class="mut sm" title="Rutin (her gün tekrar eder)">🔁</span>' : ''}${x.saat && !x.yap && !gec ? '<span class="sm" title="Bu saatte bilgisayarda MJ çalar">🔔</span>' : ''}${x.yap && /^\d\d:\d\d$/.test(x.yap) ? `<span class="mut sm">${x.yap}</span>` : ''}<button class="btn sm" data-ismenu="${x.tur}|${x.id}|${x.ds}">⋯</button></div>`;
+    const ML = x.liste ? molaMaddeler(x.liste, x.ds, x.id) : null, mlYap = ML ? ML.filter(m => m.on).length : 0;
+    return `<div class="br is ${x.yap ? 'bitti' : ''}" data-is="${x.tur}|${x.id}|${x.ds}"><span class="cb ${x.yap ? 'on' : ''}" data-istik="${x.ds}|${x.id}">${x.yap ? '✓' : ''}</span><span class="t" style="${gec ? 'color:var(--r2)' : ''}">${x.saat || '—'}</span><span class="n" title="${esc(ML ? ML.map(m => (m.on ? '✓ ' : '□ ') + m.yazi).join('\n') : x.ad)}">${esc(x.ad)}</span>${ML ? `<button class="btn sm" data-mola="${x.ds}|${x.id}" title="Mola listesi">📝 ${mlYap}/${ML.length}</button>` : ''}${x.tur === 'R' && !ML ? '<span class="mut sm" title="Rutin (her gün tekrar eder)">🔁</span>' : ''}${x.saat && !x.yap && !gec ? '<span class="sm" title="Bu saatte bilgisayarda MJ çalar">🔔</span>' : ''}${x.yap && /^\d\d:\d\d$/.test(x.yap) ? `<span class="mut sm">${x.yap}</span>` : ''}<button class="btn sm" data-ismenu="${x.tur}|${x.id}|${x.ds}">⋯</button></div>`;
   }).join('');
   const isSay = IS.length, isYap = IS.filter(x => x.yap).length;
   // 3) ilaclar  4) alarmlar
   h += `<div class="bgrid">
     <section class="bcol"><div class="bch"><h3>Pomodorolar</h3><span class="mut sm">${ps}/${ph}</span><a class="btn sm" href="#plan">Plan »</a></div><div class="bcl">${pl}</div></section>
-    <section class="bcol"><div class="bch"><h3>Yapacaklarım</h3><span class="mut sm">${isYap}/${isSay}</span><button class="btn sm" data-a="rutinler">🔁 Rutinler</button><button class="btn sm pri" data-a="isekle">＋ Ekle</button></div><div class="bcl">${yp || '<div class="bos">Bugün için bir şey yok. ＋ Ekle ile yapacağını yaz; saat koyarsan o saatte alarm çalar.</div>'}</div></section>
+    <section class="bcol"><div class="bch"><h3>Yapacaklarım</h3><span class="mut sm">${isYap}/${isSay}</span><button class="btn sm" data-a="rutinler">🔁 Rutinler</button><button class="btn sm pri" data-a="isekle">＋ Ekle</button></div><div class="bcl">${yp || '<div class="bos">Bugün için bir şey yok. ＋ Ekle ile yapacağını yaz; saat koyarsan o saatte alarm çalar.</div>'}</div>${rutinHafta(bg)}</section>
     <section class="bcol"><div class="bch"><h3>İlaçlar</h3><a class="btn sm" href="#ilac">Takip »</a></div><div class="bcl">${ilacBugun()}</div></section>
     <section class="bcol"><div class="bch"><h3>Alarmlar</h3><a class="btn sm" href="#alarm">Tümü »</a></div><div class="bcl">${alarmListe(Y.slice(0, 25), true)}</div></section></div>
+    <div class="bgrid bgrid2">
+    <section class="bcol"><div class="bch"><h3>🧹 Ev temizlik · bu hafta</h3><button class="btn sm" data-a="evduz">✏ Düzenle</button></div>${evHafta(bg)}</section>
+    <section class="bcol"><div class="bch"><h3>🫙 Shorts kavanozu</h3></div>${kavanoz(bg)}</section>
+    ${masaustuMu() && !GOMULU ? `<section class="bcol"><div class="bch"><h3>🪟 Küçük pencereler</h3></div>${pencereTuslari()}</section>` : ''}</div>
     ${kopruNotu()}`;
   return h;
 }
@@ -571,24 +587,52 @@ function rutinler() {
 }
 function gunIsleri(d) {
   const ds = dk(d), S = B.hepsi('serbest'), L = [];
-  rutinler().forEach(r => { if (!r.gun || !r.gun.length || r.gun.includes(gi(d))) L.push({ tur: 'R', id: r.id, ad: r.ad, saat: r.saat || '', ds }); });
+  rutinler().forEach(r => { if (!r.gun || !r.gun.length || r.gun.includes(gi(d))) L.push({ tur: 'R', id: r.id, ad: r.ad, saat: r.saat || '', ds, liste: Array.isArray(r.liste) && r.liste.length ? r.liste : null, bitis: r.bitis || '' }); });
   Object.entries(S).forEach(([k, v]) => { if (!k.startsWith('G|' + ds + '|') || !v) return; const o = jp(v); if (o && o.ad) L.push({ tur: 'G', id: k.slice(ds.length + 3), ad: o.ad, saat: o.saat || '', ds }); });
   L.forEach(x => x.yap = S['T|' + ds + '|' + x.id] || null);
   return L.sort((a, b) => (a.saat || '99:99').localeCompare(b.saat || '99:99'));
+}
+// rutinlerin bu haftaki takibi (Pzt-Paz): ✓ yapildi, ✗ yapilmadi, bos = henuz gelmedi, · = o gun rutin yok
+// rutin id'si olusturulma zamanini tasir (yeniId); eklenmeden onceki gunler sayilmaz
+const rutinBas = id => { const t = parseInt(String(id).slice(0, -3), 36); return t > 1.6e12 && t < 4e12 ? gunOf(new Date(t)) : null; };
+function rutinHafta(bg) {
+  const L = rutinler(); if (!L.length) return '';
+  const now = new Date(), hb = haftaBas(bg), G = [0, 1, 2, 3, 4, 5, 6].map(i => addD(hb, i)), S = B.hepsi('serbest');
+  let tDue = 0, tYap = 0;
+  const rows = L.map(r => {
+    let due = 0, yap = 0; const rb = rutinBas(r.id);
+    const tds = G.map(d => {
+      const ds = dk(d);
+      if ((r.gun && r.gun.length && !r.gun.includes(gi(d))) || (rb && d < rb)) return '<td><span class="rk yok">·</span></td>';
+      const v = S['T|' + ds + '|' + r.id], gecti = d < bg || (ds === dk(bg) && (!r.saat || r.saat <= hm(now)));
+      if (v) { due++; yap++; return `<td><button class="rk ok" data-istik="${ds}|${r.id}" title="Yapıldı${/^\d\d:\d\d$/.test(v) ? ' ' + v : ''} — geri almak için tıkla">✓</button></td>`; }
+      if (gecti && d < bg) { due++; return `<td><button class="rk no" data-istik="${ds}|${r.id}" title="Yapılmadı — yaptıysan tıkla">✗</button></td>`; }
+      return `<td><button class="rk gel" data-istik="${ds}|${r.id}" title="${ds === dk(bg) ? 'Bugün — yapınca tıkla' : 'Henüz gelmedi'}"></button></td>`;
+    }).join('');
+    tDue += due; tYap += yap;
+    const y = due ? Math.round(100 * yap / due) : null;
+    return `<tr><td class="ad" title="${esc(r.ad)}">${esc(r.ad)} <i>${y == null ? '' : '%' + y}</i></td>${tds}</tr>`;
+  }).join('');
+  const ty = tDue ? Math.round(100 * tYap / tDue) : null;
+  return `<div class="rhaf"><div class="rhb"><b>🔁 Rutinler · bu hafta</b>${ty == null ? '' : `<span class="sm" style="font-weight:700;color:${ty >= 80 ? 'var(--g2)' : ty >= 50 ? 'var(--gold)' : 'var(--r2)'}">%${ty} (${tYap}/${tDue})</span>`}</div>
+    <table class="rtb"><colgroup><col style="width:34%">${G.map(() => '<col>').join('')}</colgroup><tr><th></th>${G.map(d => `<th class="${dk(d) === dk(bg) ? 'bugun' : ''}">${GUNK[gi(d)]}</th>`).join('')}</tr>${rows}</table></div>`;
 }
 function isTik(ds, id) { const k = 'T|' + ds + '|' + id, n = new Date(); B.yaz([{ s: 'serbest', k, v: B.get('serbest', k) ? null : (ds === dk(n) ? hm(n) : 'var') }]); ciz(); }
 // ekle / duzenle penceresi. o: {tur:'G'|'R', id, ds} (duzenleme) ya da {saat} (yeni)
 function isDuzenle(o) {
   o = o || {}; const bg = gunOf(new Date());
-  let tur = o.tur || 'G', ds = o.ds || dk(bg), ad = '', saat = o.saat || '', gun = [];
-  if (o.id && tur === 'R') { const r = jp(B.get('serbest', 'R|' + o.id)) || {}; ad = r.ad || ''; saat = r.saat || ''; gun = r.gun || []; }
+  let tur = o.tur || 'G', ds = o.ds || dk(bg), ad = '', saat = o.saat || '', gun = [], liste = '', bitis = '';
+  if (o.id && tur === 'R') { const r = jp(B.get('serbest', 'R|' + o.id)) || {}; ad = r.ad || ''; saat = r.saat || ''; gun = r.gun || []; liste = (r.liste || []).join('\n'); bitis = r.bitis || ''; }
   if (o.id && tur === 'G') { const r = jp(B.get('serbest', 'G|' + ds + '|' + o.id)) || {}; ad = r.ad || ''; saat = r.saat || ''; }
   const oner = (OZ('ayar') || {}).serbestAdlari || ['Duş', 'Yürüyüş', 'Veteriner'];
   const sbSaat = ((OZ('program') || {})[GUN_EN[gi(parseD(ds))]] || []).filter(e => e.k === 'S').map(e => e.s);
   const mb = $('#mbox2'); mb.onclick = null; mb.classList.add('dar');
   const ciz2 = () => {
     const tarihSec = tur === 'G' ? `<div class="chips" style="margin:6px 0 0">${[0, 1, 2].map(i => { const d = addD(bg, i); return `<button data-isgun="${dk(d)}" class="${dk(d) === ds ? 'on' : ''}">${i === 0 ? 'Bugün' : i === 1 ? 'Yarın' : GUN[gi(d)]}</button>`; }).join('')}<input type="date" id="istarih" value="${ds}" style="width:auto;padding:5px 8px;font-size:14px"></div>`
-      : `<div class="chips" style="margin:6px 0 0">${GUNK.map((g, i) => `<button data-isgk="${i}" class="${gun.includes(i) ? 'on' : ''}">${g}</button>`).join('')}</div><div class="mut sm">${gun.length ? 'Sadece seçili günler' : 'Hiçbiri seçili değilse her gün'}</div>`;
+      : `<div class="chips" style="margin:6px 0 0">${GUNK.map((g, i) => `<button data-isgk="${i}" class="${gun.includes(i) ? 'on' : ''}">${g}</button>`).join('')}</div><div class="mut sm">${gun.length ? 'Sadece seçili günler' : 'Hiçbiri seçili değilse her gün'}</div>
+        <label class="mut sm" style="display:block;margin:12px 0 4px">Mola listesi (isteğe bağlı) — her satıra bir madde, başına saat yazabilirsin. Doluysa tek alarm çalar, liste bilgisayarda "Mola penceresi"nde Tamamlandı'ya kadar durur. <code>{ev}</code> = günün ev görevi.</label>
+        <textarea id="islist" placeholder="06:00 Ayran'ın kumunu temizle&#10;06:10 mama/su tazele">${esc(liste)}</textarea>
+        <div class="row" style="margin-top:6px"><span class="mut sm">Bitiş saati</span><input type="time" id="isbitis" value="${bitis}" style="width:130px"></div>`;
     mb.innerHTML = `<h2>${o.id ? 'Düzenle' : 'Yapacağım ekle'}</h2>
       <label class="mut sm" style="display:block;margin:10px 0 4px">Ne yapacaksın?</label><input type="text" id="isad" value="${esc(ad)}" placeholder="ör. Duş, Veteriner, Kıyafet hazırla">
       <div class="chips" style="margin:6px 0 0">${oner.map(x => `<button data-isoner="${esc(x)}">${esc(x)}</button>`).join('')}</div>
@@ -600,7 +644,7 @@ function isDuzenle(o) {
       <div class="row" style="margin-top:16px">${o.id ? '<button class="btn no" id="issil">Sil</button>' : ''}<span class="sp"></span><button class="btn" id="isvaz">Vazgeç</button><button class="btn ok" id="iskay">Kaydet</button></div>`;
     $('#isad').focus();
   };
-  const oku = () => { ad = $('#isad').value; saat = $('#issaat').value; const t = $('#istarih'); if (t && t.value) ds = t.value; };
+  const oku = () => { ad = $('#isad').value; saat = $('#issaat').value; const t = $('#istarih'); if (t && t.value) ds = t.value; const l = $('#islist'); if (l) liste = l.value; const bt = $('#isbitis'); if (bt) bitis = bt.value; };
   ciz2();
   mb.onclick = ev => {
     const b = ev.target.closest('button'); if (!b) return;
@@ -617,7 +661,7 @@ function isDuzenle(o) {
       const ops = [];
       if (o.id) ops.push(o.tur === 'R' ? { s: 'serbest', k: 'R|' + o.id, v: null } : { s: 'serbest', k: 'G|' + o.ds + '|' + o.id, v: null });
       const id = o.id && o.tur === tur ? o.id : yeniId();
-      if (tur === 'R') ops.push({ s: 'serbest', k: 'R|' + id, v: JSON.stringify({ ad, saat, gun }) });
+      if (tur === 'R') { const L2 = liste.split('\n').map(x => x.trim()).filter(Boolean), r2 = { ad, saat, gun }; if (L2.length) { r2.liste = L2; if (/^\d\d:\d\d$/.test(bitis)) r2.bitis = bitis; } ops.push({ s: 'serbest', k: 'R|' + id, v: JSON.stringify(r2) }); }
       else ops.push({ s: 'serbest', k: 'G|' + ds + '|' + id, v: JSON.stringify({ ad, saat }) });
       B.yaz(ops); $('#modal2').classList.remove('on'); mb.onclick = null; ciz();
       const gecti = tur === 'G' && saat && ds + ' ' + saat <= dk(new Date()) + ' ' + hm(new Date());
@@ -653,6 +697,131 @@ function rutinListe() {
     if (ev.target.id === 'rutkap') { $('#modal2').classList.remove('on'); mb.onclick = null; }
   };
   $('#modal2').classList.add('on');
+}
+
+/* ====== MOLA LISTESI, EV TEMIZLIK, SHORTS KAVANOZU ======
+   R|id rutinine liste:["06:00 Ayran'ın kumunu temizle", ...] ve bitis:"07:00" eklenirse "mola" olur:
+   bilgisayarda o saatte TEK alarm calar, "Mola" kucuk penceresi liste ile acilir ve Tamamlandi'ya kadar ekranda kalir.
+   serbest[M|tarih|id] = "0,2,5" isaretli maddeler. "{ev}" maddesi = gunun ev gorevi (T|tarih|ev0 ile ortak)
+   serbest[EV|plan] = [{ad, g:[Pzt..Paz]}] ev temizlik zincirleri; T|tarih|ev<i> = yapildi; EV|not = babadan istenecekler
+   serbest[K|tarih] = "sayi"  Shorts izlemedim (kavanoz) */
+const EV_VARS = [
+  { ad: 'Ana iş', g: ['Robot süpürge', 'Banyo temizliği', 'Bulaşık makinesi', 'Mutfak temizliği', 'Çalışma alanı / masalar', 'Mutfak dolabı', 'Baba + telafi'] },
+  { ad: 'Çamaşır', g: ['', '', 'Makineye at + as', 'Astıklarını topla', 'Dolaba yerleştir', '', ''] },
+  { ad: 'Toz alma', g: ['Salon', 'Banyo: klozet + lavabo', 'Yatak odası', 'Ara oda', 'Hol', 'Banyo: kalan yerler (çamaşır mak. vb.)', ''] },
+  { ad: 'Silme', g: ['Işık düğmeleri', 'Kapı kolları', 'Kapılar (ilk 3)', 'Kapılar (diğer 3)', 'Salon penceresi + balkon camı', 'Mutfak camı · ara oda camları · banyo aynaları', ''] }];
+const evPlan = () => { const p = jp(B.get('serbest', 'EV|plan')); return Array.isArray(p) && p.length ? p : EV_VARS; };
+const evGorev = d => ((evPlan()[0] || {}).g || [])[gi(d)] || '';
+function molaMaddeler(liste, ds, id) {
+  const on = new Set(String(B.get('serbest', 'M|' + ds + '|' + id) || '').split(',').filter(x => x !== '').map(Number));
+  return liste.map((s, i) => {
+    const m = /^(\d\d:\d\d)\s+(.*)$/.exec(s), saat = m ? m[1] : '', t = m ? m[2] : String(s), ev = t.includes('{ev}');
+    const yazi = ev ? t.replace('{ev}', 'Günün ev görevi: ' + (evGorev(parseD(ds)) || '—')) : t;
+    return { i, saat, yazi, ev, on: ev ? !!B.get('serbest', 'T|' + ds + '|ev0') : on.has(i) };
+  });
+}
+function molaTik(ds, id, i) {
+  const r = jp(B.get('serbest', 'R|' + id)) || {}, M = molaMaddeler(r.liste || [], ds, id), m = M[i]; if (!m) return;
+  if (m.ev) { isTik(ds, 'ev0'); return; }
+  const s = new Set(M.filter(x => x.on && !x.ev).map(x => x.i)); s.has(i) ? s.delete(i) : s.add(i);
+  B.yaz([{ s: 'serbest', k: 'M|' + ds + '|' + id, v: s.size ? [...s].sort((a, b) => a - b).join(',') : null }]); ciz();
+}
+function molaAc(ds, id) {
+  const mb = $('#mbox2'); mb.onclick = null; mb.classList.add('dar');
+  const ciz2 = () => {
+    const r = jp(B.get('serbest', 'R|' + id)) || {}, M = molaMaddeler(r.liste || [], ds, id), yap = B.get('serbest', 'T|' + ds + '|' + id);
+    mb.innerHTML = `<h2>☕ ${esc(r.ad || 'Mola')}</h2><p class="mut sm">${GUN[gi(parseD(ds))]} ${tarihK(parseD(ds))} · ${r.saat || ''}${r.bitis ? '–' + r.bitis : ''}</p>
+      ${M.map(m => `<div class="br" style="cursor:pointer" data-mtik="${m.i}"><span class="cb ${m.on ? 'on' : ''}">${m.on ? '✓' : ''}</span><span class="t">${m.saat}</span><span class="n" style="white-space:normal">${esc(m.yazi)}</span></div>`).join('')}
+      <div class="row" style="margin-top:14px"><button class="btn" id="mduz">✏ Düzenle</button><span class="sp"></span><button class="btn" id="mkap">Kapat</button><button class="btn ${yap ? '' : 'ok'}" id="mtam">${yap ? '✓ Tamamlandı (geri al)' : 'Tamamlandı'}</button></div>`;
+  };
+  ciz2();
+  mb.onclick = ev => {
+    const t = ev.target.closest('[data-mtik]'); if (t) { molaTik(ds, id, +t.dataset.mtik); ciz2(); return; }
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.id === 'mtam') { isTik(ds, id); ciz2(); return; }
+    if (b.id === 'mduz') { isDuzenle({ tur: 'R', id, ds }); return; }
+    if (b.id === 'mkap') { $('#modal2').classList.remove('on'); mb.onclick = null; }
+  };
+  $('#modal2').classList.add('on');
+}
+// ev temizlik: satir = gun (Pzt-Paz), sutun = zincir (Ana is, Camasir, Toz alma, Silme)
+function evHafta(bg) {
+  const P = evPlan(), hb = haftaBas(bg), G = [0, 1, 2, 3, 4, 5, 6].map(i => addD(hb, i)), S = B.hepsi('serbest');
+  let due = 0, yap = 0;
+  const rows = G.map(d => {
+    const ds = dk(d), bu = ds === dk(bg);
+    const tds = P.map((z, zi) => {
+      const t = (z.g || [])[gi(d)] || ''; if (!t) return '<td><span class="rk yok">·</span></td>';
+      const v = S['T|' + ds + '|ev' + zi];
+      if (v) { due++; yap++; return `<td><button class="ek ok" data-evt="${ds}|${zi}" title="Yapıldı${/^\d\d:\d\d$/.test(v) ? ' ' + v : ''} — geri almak için tıkla">✓ ${esc(t)}</button></td>`; }
+      if (d < bg) { due++; return `<td><button class="ek no" data-evt="${ds}|${zi}" title="Yapılmadı — yaptıysan tıkla">✗ ${esc(t)}</button></td>`; }
+      return `<td><button class="ek gel" data-evt="${ds}|${zi}" title="${bu ? 'Bugün — yapınca tıkla' : 'Henüz gelmedi'}">${esc(t)}</button></td>`;
+    }).join('');
+    return `<tr class="${bu ? 'bugun' : ''}"><th>${GUNK[gi(d)]}</th>${tds}</tr>`;
+  }).join('');
+  const y = due ? Math.round(100 * yap / due) : null, paz = gi(bg) === 6;
+  return `<div class="bcl"><div class="mut sm" style="margin-bottom:6px">Kutuya tıkla: yaptım / geri al. Günlük işler (yatak, bulaşık-tezgah, çöp) rutinlerde.${y == null ? '' : ` Bu hafta <b style="color:${y >= 80 ? 'var(--g2)' : y >= 50 ? 'var(--gold)' : 'var(--r2)'}">%${y}</b> (${yap}/${due})`}</div>
+    <div style="overflow-x:auto"><table class="evtb"><colgroup><col style="width:38px">${P.map(() => '<col>').join('')}</colgroup><tr><th></th>${P.map(z => `<th>${esc(z.ad)}</th>`).join('')}</tr>${rows}</table></div>
+    <div class="sm" style="margin:10px 0 4px;font-weight:700;color:${paz ? 'var(--gold)' : 'var(--mut)'}">👨 Babadan isteyeceklerim${paz ? ' — bugün Pazar!' : ' (Pazar)'}</div>
+    <textarea data-babanot style="min-height:56px" placeholder="Aklına geldikçe yaz, Pazar günü unutma…">${esc(B.get('serbest', 'EV|not') || '')}</textarea></div>`;
+}
+function evDuzenle() {
+  const mb = $('#mbox2'); mb.onclick = null; mb.classList.remove('dar');
+  const P = JSON.parse(JSON.stringify(evPlan()));
+  mb.innerHTML = `<h2>🧹 Ev temizlik planı</h2><p class="mut sm">Her sütun bir zincir; boş bırakılan gün o zincirde iş yok demek.</p>
+    <div style="overflow-x:auto"><table class="evtb evduz"><tr><th></th>${P.map((z, zi) => `<th><input type="text" data-evz="${zi}" value="${esc(z.ad)}"></th>`).join('')}</tr>
+    ${GUNK.map((g, gi2) => `<tr><th>${g}</th>${P.map((z, zi) => `<td><input type="text" data-evg="${zi}|${gi2}" value="${esc((z.g || [])[gi2] || '')}"></td>`).join('')}</tr>`).join('')}</table></div>
+    <div class="row" style="margin-top:14px"><button class="btn" id="evvar">Varsayılana dön</button><span class="sp"></span><button class="btn" id="evvaz">Vazgeç</button><button class="btn ok" id="evkay">Kaydet</button></div>`;
+  mb.onclick = ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.id === 'evvaz') { $('#modal2').classList.remove('on'); mb.onclick = null; return; }
+    if (b.id === 'evvar') { B.yaz([{ s: 'serbest', k: 'EV|plan', v: null }]); $('#modal2').classList.remove('on'); mb.onclick = null; ciz(); return; }
+    if (b.id === 'evkay') {
+      mb.querySelectorAll('[data-evz]').forEach(i => P[+i.dataset.evz].ad = i.value.trim() || P[+i.dataset.evz].ad);
+      mb.querySelectorAll('[data-evg]').forEach(i => { const [zi, g] = i.dataset.evg.split('|').map(Number); P[zi].g = P[zi].g || []; P[zi].g[g] = i.value.trim(); });
+      B.yaz([{ s: 'serbest', k: 'EV|plan', v: JSON.stringify(P) }]); $('#modal2').classList.remove('on'); mb.onclick = null; ciz(); toast('Ev temizlik planı kaydedildi.');
+    }
+  };
+  $('#modal2').classList.add('on');
+}
+function kavanoz(bg) {
+  const S = B.hepsi('serbest'), hb = dk(haftaBas(bg)), hs = dk(addD(haftaBas(bg), 6)); let top = 0, haf = 0;
+  Object.entries(S).forEach(([k, v]) => { if (!k.startsWith('K|')) return; const n = +v || 0, d = k.slice(2); top += n; if (d >= hb && d <= hs) haf += n; });
+  const bu = +S['K|' + dk(bg)] || 0;
+  return `<div class="bcl" style="text-align:center"><div class="kav" title="Toplam ${top}">${'<i></i>'.repeat(Math.min(top, 77))}</div>
+    <div style="font-size:26px;font-weight:800;color:var(--gold)">${top} <span class="sm mut" style="font-weight:600">toplam</span></div>
+    <div class="mut sm" style="margin-bottom:8px">Bugün <b style="color:var(--ink)">${bu}</b> · Bu hafta <b style="color:var(--ink)">${haf}</b></div>
+    <button class="btn ok" data-kav="1" style="width:100%">＋1 Shorts izlemedim</button>${bu ? '<button class="btn sm" data-kav="-1" style="margin-top:6px">−1 geri al</button>' : ''}</div>`;
+}
+function kavanozEkle(n) {
+  if (!DILAY()) return;
+  const k = 'K|' + dk(new Date()), v = Math.max(0, (+B.get('serbest', k) || 0) + n);
+  B.yaz([{ s: 'serbest', k, v: v ? String(v) : null }]); ciz();
+  if (n > 0) toast('🪙 Kavanoza bir altın! Bugün ' + v + '.');
+}
+// bilgisayardaki kucuk pencereler (ders / mola): ac-kapa
+let penDurum = {}, penZ = 0;
+function pencereTuslari() {
+  setTimeout(pencereDurumOku, 0);
+  const et = w => penDurum[w] == null ? '…' : penDurum[w] ? 'Kapat' : 'Aç';
+  return `<div class="bcl"><div class="mut sm" style="margin-bottom:6px">Bilgisayarda ekranda duran pencereler. Kapatsan da buradan tekrar açarsın.</div>
+    ${[['ders', '📚 Ders (pomodoro) penceresi'], ['mola', '☕ Mola penceresi']].map(([w, a]) => `<div class="br"><span class="n">${a}</span><button class="btn sm" data-pen="${w}" id="pen_${w}">${et(w)}</button></div>`).join('')}</div>`;
+}
+function penEtiket() { ['ders', 'mola'].forEach(w => { const b = document.getElementById('pen_' + w); if (b) { b.textContent = penDurum.yok ? 'alarm kapalı' : penDurum[w] == null ? '…' : penDurum[w] ? 'Kapat' : 'Aç'; b.classList.toggle('ok', penDurum[w] === false); } }); }
+async function pencereDurumOku(zorla) {
+  if (!zorla && Date.now() - penZ < 4000) { penEtiket(); return; }
+  penZ = Date.now();
+  try { const r = await fetch(KOPRU + '/api/durum', { cache: 'no-store' }); const j = await r.json(); penDurum = { ders: !!j.wDers, mola: !!j.wMola }; }
+  catch (e) { penDurum = { yok: true }; }
+  penEtiket();
+}
+async function pencereDegistir(w) {
+  if (!DILAY()) return;
+  try {
+    const r = await fetch(KOPRU + '/api/cmd', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ c: 'kpencere', w, ac: !penDurum[w] }) });
+    const j = await r.json(); penDurum = { ders: !!j.wDers, mola: !!j.wMola }; penEtiket();
+    toast((w === 'ders' ? 'Ders' : 'Mola') + ' penceresi ' + (penDurum[w] ? 'açıldı.' : 'kapatıldı.'));
+  } catch (e) { toast('Bilgisayardaki alarm programına ulaşılamadı.'); }
 }
 
 /* ====== BILGISAYAR: alarm programi ile esitleme (127.0.0.1:47800) ======
@@ -713,25 +882,32 @@ function kopruNotu() {
   if (!masaustuMu() || GOMULU || B.TEST || kopru !== false) return '';
   return `<div class="card sm" style="margin-top:10px;border-color:var(--y)">⚠ Bu bilgisayardaki alarm programına ulaşılamıyor; değişiklikler alarmlara gitmiyor. Alarm programı açık mı? (Tepside saat simgesi.) Tarayıcı "yerel ağdaki cihazlara erişim" izni sorarsa <b>İzin ver</b>'e bas.</div>`;
 }
-let ilacGunT = 10;
+// ilac takibi: tek hafta (Pzt-Paz), satir = ilac, sutun = gun. ‹ › ile hafta degisir
+let ilacHafta = null;
 function cizIlacT() {
   const A2 = OZ('ayar'); if (!A2) return yokProgram;
-  const now = new Date(), bg = gunOf(now), L = A2.ilaclar || [], due = L.map(() => 0), al = L.map(() => 0);
-  let rows = '';
-  for (let r = 0; r < ilacGunT; r++) {
-    const d = addD(bg, -r);
-    rows += `<tr><td class="mut sm" style="white-space:nowrap">${r === 0 ? '<b style="color:var(--gold)">Bugün</b>' : GUN[gi(d)].slice(0, 3) + ' ' + pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1)}</td>`;
-    L.forEach((x, c) => {
-      const k = dk(d) + '|' + x.Id, v = B.get('ilac', k), [h, m] = x.Saat.split(':').map(Number), z = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m);
-      if (v) { if (r < 7) { due[c]++; al[c]++; } rows += `<td><button class="ib ok" data-ilk="${k}">✓${/^\d\d:\d\d$/.test(v) ? ' ' + v : ''}</button></td>`; }
-      else if (z <= now) { if (r < 7) due[c]++; rows += `<td><button class="ib no" data-ilk="${k}">✗</button></td>`; }
-      else rows += `<td><button class="ib" data-ilk="${k}">${x.Saat}</button></td>`;
-    });
-    rows += '</tr>';
-  }
-  return `<div class="card"><div class="row"><h2>İlaç takibi</h2><span class="sp"></span><select id="ilgunt" style="width:auto">${[10, 30, 90].map(n => `<option value="${n}" ${n === ilacGunT ? 'selected' : ''}>Son ${n} gün</option>`).join('')}</select></div>
-    <div class="mut sm" style="margin:6px 0 10px">Alarm saatinde bilgisayarda Michael Jackson çalar. Buradan "içtim" işaretleyebilir ya da geri alabilirsin; bilgisayara da geçer.</div>
-    <div style="overflow-x:auto"><table class="tb" style="min-width:${120 + L.length * 90}px"><tr><th></th>${L.map((x, c) => `<th style="text-align:center">${esc(x.Ad)}<div class="mut sm">${x.Saat}${due[c] ? ' · %' + Math.round(100 * al[c] / due[c]) : ''}</div></th>`).join('')}</tr>${rows}</table></div></div>`;
+  const now = new Date(), bg = gunOf(now), L = A2.ilaclar || [];
+  if (!ilacHafta) ilacHafta = haftaBas(bg);
+  const G = [0, 1, 2, 3, 4, 5, 6].map(i => addD(ilacHafta, i)), son = G[6];
+  let topDue = 0, topAl = 0;
+  const rows = L.map(x => {
+    let due = 0, al = 0;
+    const [h, m] = x.Saat.split(':').map(Number);
+    const tds = G.map(d => {
+      const k = dk(d) + '|' + x.Id, v = B.get('ilac', k), z = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m);
+      if (v) { due++; al++; return `<td><button class="ib ok" data-ilk="${k}" title="İçildi${/^\d\d:\d\d$/.test(v) ? ' ' + v : ''} — geri almak için tıkla">✓${/^\d\d:\d\d$/.test(v) ? `<small>${v}</small>` : ''}</button></td>`; }
+      if (z <= now) { due++; return `<td><button class="ib no" data-ilk="${k}" title="İçilmedi — içtiysen tıkla">✗</button></td>`; }
+      return `<td><button class="ib bos" data-ilk="${k}" title="Henüz saati gelmedi">${dk(d) === dk(bg) ? x.Saat : ''}</button></td>`;
+    }).join('');
+    topDue += due; topAl += al;
+    const y = due ? Math.round(100 * al / due) : null;
+    return `<tr><th class="ilad">${esc(x.Ad)}<div class="mut sm">${x.Saat}${y == null ? '' : ` · <b style="color:${y >= 80 ? 'var(--g2)' : y >= 50 ? 'var(--gold)' : 'var(--r2)'}">%${y}</b>`}</div></th>${tds}</tr>`;
+  }).join('');
+  const ty = topDue ? Math.round(100 * topAl / topDue) : null, buHafta = dk(ilacHafta) === dk(haftaBas(bg));
+  return `<div class="card"><div class="row"><h2>İlaç takibi</h2><span class="sp"></span>
+      <button class="btn sm" data-ilh="-1">‹</button><b style="min-width:120px;text-align:center">${tarihK(ilacHafta)} – ${tarihK(son)}</b><button class="btn sm" data-ilh="1">›</button>${buHafta ? '' : '<button class="btn sm" data-ilh="0">Bu hafta</button>'}</div>
+    <div class="mut sm" style="margin:6px 0 10px">Yeşil ✓ = içildi, kırmızı ✗ = içilmedi. Kutuya tıklayarak değiştirebilirsin; bilgisayara da geçer.${ty == null ? '' : ` Bu hafta: <b>${topAl}/${topDue}</b> (%${ty})`}</div>
+    <div style="overflow-x:auto"><table class="tb iltb"><tr><th></th>${G.map(d => `<th class="${dk(d) === dk(bg) ? 'bugun' : ''}">${GUNK[gi(d)]}<div class="mut sm">${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}</div></th>`).join('')}</tr>${rows || '<tr><td class="mut">İlaç tanımlı değil.</td></tr>'}</table></div></div>`;
 }
 function cizAlarm() {
   const Y = olaylar(7), A2 = OZ('ayar'); if (!Y || !A2) return yokProgram;
@@ -740,6 +916,8 @@ function cizAlarm() {
     <div class="mut sm" style="margin-top:8px">Müzik ve alarm sesi bilgisayardan çalar; telefon sadece gösterir.</div></div>`;
 }
 document.addEventListener('click', e => {
+  const ih = e.target.closest('[data-ilh]');
+  if (ih) { const v = +ih.dataset.ilh, bh = haftaBas(new Date()); ilacHafta = v ? addD(ilacHafta || bh, 7 * v) : bh; ciz(); return; }
   if (!DILAY()) return;
   const il = e.target.closest('[data-ilk]');
   if (il) { const k = il.dataset.ilk, n = new Date(), bugun = k.startsWith(dk(n) + '|'); B.yaz([{ s: 'ilac', k, v: B.get('ilac', k) ? null : (bugun ? pad2(n.getHours()) + ':' + pad2(n.getMinutes()) : 'var') }]); ciz(); return; }
@@ -748,6 +926,10 @@ document.addEventListener('click', e => {
   const sp = e.target.closest('[data-sbp]');
   if (sp) { const k = sp.dataset.sbp, A2 = OZ('ayar') || {}; adSor('Serbest mola', 'Bu 1 saatte ne yapacaksın?', B.get('serbest', k) || '', A2.serbestAdlari || []).then(v => { if (v != null) { B.yaz([{ s: 'serbest', k: k + '|T', v: null }, { s: 'serbest', k, v: v || null }]); ciz(); } }); return; }
   const it = e.target.closest('[data-istik]'); if (it) { const [ds, id] = it.dataset.istik.split('|'); isTik(ds, id); return; }
+  const mo = e.target.closest('[data-mola]'); if (mo) { const [ds, id] = mo.dataset.mola.split('|'); molaAc(ds, id); return; }
+  const et = e.target.closest('[data-evt]'); if (et) { const [ds, zi] = et.dataset.evt.split('|'); isTik(ds, 'ev' + zi); return; }
+  const kv = e.target.closest('[data-kav]'); if (kv) { kavanozEkle(+kv.dataset.kav); return; }
+  const pn = e.target.closest('[data-pen]'); if (pn) { pencereDegistir(pn.dataset.pen); return; }
   const im = e.target.closest('[data-ismenu]'); if (im) { isMenu(im.dataset.ismenu, e); return; }
   const ie = e.target.closest('[data-isekle]'); if (ie) { isDuzenle({ saat: ie.dataset.isekle }); return; }
   const ir = e.target.closest('.br.is[data-is]'); if (ir && !e.target.closest('button')) { const [tur, id, ds] = ir.dataset.is.split('|'); isDuzenle({ tur, id, ds }); return; }
@@ -760,7 +942,7 @@ document.addEventListener('contextmenu', e => {
 });
 document.addEventListener('change', e => {
   if (e.target.dataset.sesk && DILAY()) { B.yaz([{ s: 'ses', k: e.target.dataset.sesk, v: e.target.checked }]); }
-  if (e.target.id === 'ilgunt') { ilacGunT = +e.target.value; ciz(); }
+  if (e.target.matches('[data-babanot]') && DILAY()) { const v = e.target.value; B.yaz([{ s: 'serbest', k: 'EV|not', v: v.trim() ? v : null }]); toast('Not kaydedildi.'); }
 });
 setInterval(() => { document.querySelectorAll('[data-cd2]').forEach(el => { if (el.dataset.cd2) el.textContent = sure2(new Date(el.dataset.cd2) - Date.now()); }); }, 1000);
 
@@ -849,6 +1031,7 @@ app.addEventListener('click', e => {
     case 'gunmenu': gunMenu(parseD(t.dataset.gd), e); break;
     case 'isekle': isDuzenle({}); break;
     case 'rutinler': rutinListe(); break;
+    case 'evduz': evDuzenle(); break;
     case 'guntemizle': { const d = addD(hafta, +t.dataset.g); temizleF(ds => ds === dk(d), `${GUN[gi(d)]} ${tarihK(d)} gününün`); break; }
     case 'dsek': dSek = t.dataset.v; ciz(); break;
     case 'htur': hTur = t.dataset.v; ciz(); break;

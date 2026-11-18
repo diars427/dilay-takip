@@ -233,7 +233,7 @@ const POM = AYAR.pomSaat.map(s => { const a = s.split(':'); return +a[0] * 60 + 
 // Pazar = TYT deneme gunu: 8 pomodoro, farkli saatler (alarm.ps1 Sunday ile ayni)
 const POM_PAZ = (AYAR.pomSaatPazar || ['03:15', '04:15', '05:15', '07:45', '16:45', '17:45', '18:45', '21:00']).map(s => { const a = s.split(':'); return +a[0] * 60 + +a[1]; });
 // yeni program bu tarihte baslar; oncesi eski program (her gun 12 pomodoro, ayni saatler)
-const YENI_PROG = parseD(AYAR.yeniProgram || '2026-11-23'), yeniMi = d => gunOf(d) >= YENI_PROG;
+const YENI_PROG = parseD(AYAR.yeniProgram || '2026-11-18'), yeniMi = d => gunOf(d) >= YENI_PROG;
 const pazYeni = d => d.getDay() === 0 && yeniMi(d);
 // yavas baslangic: 19 Kasim'da ilk 6 pomodoro, her gun bir fazla, 25 Kasim'dan itibaren 12
 const RAMPA_BAS = new Date(2026, 10, 19), rampa = d => { const g = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - RAMPA_BAS) / 864e5); return g < 0 ? 12 : Math.min(12, 6 + g); };

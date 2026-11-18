@@ -99,7 +99,10 @@ window.Bulut = (function () {
     if (gonderiliyor) { await gonderiliyor; if (!kuyruk.length) return true; }
     gonderiliyor = (async () => {
       while (kuyruk.length) {
-        const parca = kuyruk.slice(0, 200);
+        // paket boyutu sinirli (~800 KB): fotografli notlar tek pakette sunucunun sinirini asmasin
+        let n = 0, boy = 0;
+        while (n < kuyruk.length && n < 200) { const b = JSON.stringify(kuyruk[n].v || '').length; if (n && boy + b > 800000) break; boy += b; n++; }
+        const parca = kuyruk.slice(0, n);
         try {
           const { error } = await sb.from('kv').upsert(parca.map(q => ({ store: q.s, k: q.k, v: q.v })), { onConflict: 'store,k' });
           if (error) {
@@ -124,17 +127,19 @@ window.Bulut = (function () {
     try {
       await gonder();
       // 3 sn geriden basla (ayni anda yazilanlar kacmasin)
-      let since = new Date(new Date(son).getTime() - 3000).toISOString();
-      for (let tur = 0; tur < 50; tur++) {
-        const { data, error } = await sb.from('kv').select('store,k,v,updated_at').gt('updated_at', since).order('updated_at').limit(1000);
+      const since = new Date(new Date(son).getTime() - 3000).toISOString();
+      // 100'erlik sayfalar (fotografli notlar tek cevapta cok buyumesin); ayni anda yazilanlar atlanmasin diye sira sabit
+      const SAYFA = 100;
+      for (let tur = 0; tur < 300; tur++) {
+        const { data, error } = await sb.from('kv').select('store,k,v,updated_at').gt('updated_at', since)
+          .order('updated_at').order('store').order('k').range(tur * SAYFA, tur * SAYFA + SAYFA - 1);
         if (error) { durum = 'hata: ' + error.message; break; }
         data.forEach(r => {
           if (kuyruk.some(q => q.s === r.store && q.k === r.k)) return;   // bende bekleyen daha yeni bir degisiklik var
           if (uygula(r.store, r.k, r.v)) degisti = true;
           if (r.updated_at > son) son = r.updated_at;
         });
-        if (data.length < 1000) break;
-        since = data[data.length - 1].updated_at;
+        if (data.length < SAYFA) break;
       }
       if (!/^hata/.test(durum)) durum = 'çevrimiçi';
       kaydet();

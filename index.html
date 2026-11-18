@@ -547,8 +547,7 @@ function cizBugun() {
     <section class="bcol"><div class="bch"><h3>İlaçlar</h3><a class="btn sm" href="#ilac">Takip »</a></div><div class="bcl">${ilacBugun()}</div></section>
     <section class="bcol"><div class="bch"><h3>Alarmlar</h3><a class="btn sm" href="#alarm">Tümü »</a></div><div class="bcl">${alarmListe(Y.slice(0, 25), true)}</div></section></div>
     <div class="bgrid bgrid2">
-    <section class="bcol"><div class="bch"><h3>🧹 Ev temizlik · bu hafta</h3><button class="btn sm" data-a="evduz">✏ Düzenle</button></div>${evHafta(bg)}</section>
-    ${yeniMi(bg) ? `<section class="bcol"><div class="bch"><h3>💧 Su · günde 1 L</h3></div>${suKutu(bg)}</section>` : `<section class="bcol"><div class="bch"><h3>🫙 Shorts kavanozu</h3></div>${kavanoz(bg)}</section>`}
+    ${yeniMi(bg) ? `<section class="bcol"><div class="bch"><h3>💧 Su · günde 1 L</h3></div>${suKutu(bg)}</section>` : ''}
     ${masaustuMu() && !GOMULU ? `<section class="bcol"><div class="bch"><h3>🪟 Küçük pencereler</h3></div>${pencereTuslari()}</section>` : ''}</div>
     ${kopruNotu()}`;
   return h;
@@ -1617,7 +1616,10 @@ function cizNotlar() {
   sira.forEach(s => {
     const [d, k] = s.split('||');
     h += `<h3 style="margin:16px 0 8px">${esc(d)} · ${esc(k)}</h3>`;
-    D2.filter(n => n.ders === d && (n.konu || 'Genel') === k).forEach(n => {
+    // "once" alani olan not, ayni konuda basligi o kelimeyi iceren notun hemen onune konur
+    const G0 = D2.filter(n => n.ders === d && (n.konu || 'Genel') === k), G = G0.filter(n => !n.once);
+    G0.filter(n => n.once).forEach(n => { const a = String(n.once).toLocaleLowerCase('tr'), i = G.findIndex(x => !x.once && (x.baslik || '').toLocaleLowerCase('tr').includes(a)); if (i < 0) G.push(n); else G.splice(i, 0, n); });
+    G.forEach(n => {
       h += `<div class="card notk"><div class="row"><b style="font-size:15px">${esc(n.baslik || 'Not')}</b><span class="sp"></span>${DILAY() ? `<button class="btn sm noprint" data-nduz="${esc(n.id)}">✏</button><button class="btn sm no noprint" data-nsil="${esc(n.id)}">🗑</button>` : ''}</div>
         ${n.kaynak ? `<div class="mut sm">${esc(n.kaynak)}</div>` : ''}${n.metin ? `<div style="white-space:pre-wrap;margin-top:8px;line-height:1.55">${esc(n.metin)}</div>` : ''}${n.img ? `<img src="${n.img}" style="max-width:100%;border-radius:8px;margin-top:8px;background:#fff">` : ''}</div>`;
     });
@@ -1645,14 +1647,23 @@ async function notDuzenle(id) {
 }let eskiSOnbellek = null;
 async function eskiS() { if (eskiSOnbellek) return eskiSOnbellek; let S = null; const ham = await idbEski(); if (ham) { try { S = JSON.parse(ham); } catch (e) { } } if (!S) { try { const l = localStorage.getItem('yks27'); if (l) S = JSON.parse(l); } catch (e) { } } return eskiSOnbellek = S || {}; }
 // sonradan eklenen hazir notlar (ek-notlar.js): sadece Dilay, her surum bir kez; buluta olmayanlari yazar (silinmis olan geri gelmez)
-const EKNOT_V = '2';
+// her dosyanin kendi surumu: yeni not gelince sadece o dosya indirilir (buyuk dosyalar tekrar inmez)
+const EKNOT_DOSYA = [{ f: 'ek-notlar.js', v: '1' }, { f: 'ek-notlar2.js', v: '3' }, { f: 'ek-notlar3.js', v: '1' }];
 async function ekNotlar() {
-  if (!DILAY() || localStorage.getItem(AK('dt_eknot')) === EKNOT_V) return 0;
-  try { await scriptYukle('ek-notlar.js?v=' + EKNOT_V); await scriptYukle('ek-notlar2.js?v=' + EKNOT_V); } catch (e) { return 0; }
-  const var_ = B.hepsi('not'), ops = (window.EKNOT || []).filter(n => !var_[n.id]).map(n => { const v = Object.assign({}, n); delete v.id; return { s: 'not', k: n.id, v }; });
-  for (let i = 0; i < ops.length; i += 3) await B.yaz(ops.slice(i, i + 3));
-  localStorage.setItem(AK('dt_eknot'), EKNOT_V);
-  return ops.length;
+  if (!DILAY()) return 0;
+  const eski = localStorage.getItem(AK('dt_eknot'));   // eski tek surum: '3' ise ilk iki dosya zaten tamam
+  let top = 0;
+  for (const e of EKNOT_DOSYA) {
+    const ak = AK('dt_eknot_' + e.f);
+    if (!localStorage.getItem(ak) && eski === '3' && e.f !== 'ek-notlar3.js') localStorage.setItem(ak, e.v);
+    if (localStorage.getItem(ak) === e.v) continue;
+    window.EKNOT = [];
+    try { await scriptYukle(e.f + '?v=' + e.v); } catch (x) { continue; }
+    const var_ = B.hepsi('not'), ops = (window.EKNOT || []).filter(n => !var_[n.id]).map(n => { const v = Object.assign({}, n); delete v.id; return { s: 'not', k: n.id, v }; });
+    for (let i = 0; i < ops.length; i += 3) await B.yaz(ops.slice(i, i + 3));
+    localStorage.setItem(ak, e.v); top += ops.length;
+  }
+  return top;
 }
 async function notlarAktar() {
   if (!DILAY() || localStorage.getItem(AK('dt_not_aktarildi')) || Object.keys(B.hepsi('not')).length) return 0;

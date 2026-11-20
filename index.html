@@ -549,6 +549,7 @@ function cizBugun() {
     <section class="bcol"><div class="bch"><h3>İlaçlar</h3><a class="btn sm" href="#ilac">Takip »</a></div><div class="bcl">${ilacBugun()}</div></section>
     <section class="bcol"><div class="bch"><h3>Alarmlar</h3><a class="btn sm" href="#alarm">Tümü »</a></div><div class="bcl">${alarmListe(Y.slice(0, 25), true)}</div></section></div>
     <div class="bgrid bgrid2">
+    <section class="bcol"><div class="bch"><h3>⏱ Çalışma saati</h3><span class="mut sm">TYT'ye ${k1} gün</span></div>${csKutu(bg)}</section>
     ${yeniMi(bg) ? `<section class="bcol"><div class="bch"><h3>💧 Su · günde 1 L</h3></div>${suKutu(bg)}</section>` : ''}
     ${masaustuMu() && !GOMULU ? `<section class="bcol"><div class="bch"><h3>🪟 Küçük pencereler</h3></div>${pencereTuslari()}</section>` : ''}</div>
     ${kopruNotu()}`;
@@ -824,6 +825,61 @@ function suKutu(bg) {
     <button class="btn ok" data-su="1" style="width:100%">＋1 bardak su içtim (250 ml)</button>${bu ? '<button class="btn sm" data-su="-1" style="margin-top:6px">−1 geri al</button>' : ''}
     <div style="display:flex;gap:2px;margin-top:10px">${gun}</div></div>`;
 }
+// gunluk calisma saati: serbest[CS|tarih] = dakika. Grafik program basindan TYT'ye kadar her gunu gosterir
+const csDk = d => +B.get('serbest', 'CS|' + dk(d)) || 0;
+const csYaz = m => { const s = Math.floor(m / 60), d = Math.round(m % 60); return s && d ? s + ' sa ' + d + ' dk' : s ? s + ' sa' : d + ' dk'; };
+function csCoz(s) {
+  s = String(s || '').trim().toLocaleLowerCase('tr').replace(',', '.');
+  let m = s.match(/^(\d{1,2})\s*:\s*(\d{1,2})$/); if (m) return +m[1] * 60 + +m[2];
+  m = s.match(/^(\d{1,2})\s*(sa|saat|s)\.?\s*(\d{1,2})\s*(dk|d|dakika)?$/); if (m) return +m[1] * 60 + +m[3];
+  m = s.match(/^(\d{1,4})\s*(dk|d|dakika)$/); if (m) return +m[1];
+  m = s.match(/^(\d{1,2}(\.\d+)?)\s*(sa|saat|s)?$/); if (m) return Math.round(+m[1] * 60);
+  return NaN;
+}
+async function csGir(ds) {
+  if (!DILAY()) return;
+  const d = parseD(ds), eski = csDk(d);
+  const v = await adSor('Çalışma saati', `${GUN[gi(d)]} ${tarihK(d)} · bugün kaç saat çalıştın? Örnek: 6 · 6.5 · 6:30 · 45 dk (silmek için 0)`, eski ? Math.floor(eski / 60) + ':' + String(eski % 60).padStart(2, '0') : '', ['2', '4', '6', '8', '10', '12']);
+  if (v == null) return;
+  const m = csCoz(v);
+  if (!(m >= 0) || m > 1440) { toast('Anlaşılmadı. Örnek: 6 · 6.5 · 6:30 · 45 dk'); return; }
+  B.yaz([{ s: 'serbest', k: 'CS|' + ds, v: m ? String(m) : null }]); ciz();
+  if (m) toast('⏱ ' + tarihK(d) + ': ' + csYaz(m) + ' kaydedildi.');
+}
+function csKutu(bg) {
+  const AYK = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+  const bas = PB, gun = Math.max(1, Math.round((TYT - bas) / 864e5)), gecen = Math.max(0, Math.min(gun, Math.round((bg - bas) / 864e5) + 1));
+  const V = []; let top = 0, en = 0;
+  for (let i = 0; i < gun; i++) { const m = i < gecen ? csDk(addD(bas, i)) : 0; V.push(m); top += m; if (m > en) en = m; }
+  const ort = gecen ? top / gecen : 0, bu = csDk(bg), hb = haftaBas(bg);
+  let haf = 0; for (let i = 0; i < 7; i++) { const d = addD(hb, i); if (d <= bg && d >= bas) haf += csDk(d); }
+  // grafik (SVG): gunluk cubuklar + 7 gunluk ortalama cizgisi
+  const W = 720, H = 170, sl = 24, alt = 18, ust = 6, tavan = Math.max(8, Math.ceil(en / 60 / 2) * 2), bw = (W - sl) / gun;
+  const y = sa => ust + (H - ust - alt) * (1 - sa / tavan);
+  let g = '';
+  for (let s = 0; s <= tavan; s += 2) g += `<line x1="${sl}" x2="${W}" y1="${y(s)}" y2="${y(s)}" style="stroke:var(--line)" stroke-width="1"/><text x="${sl - 4}" y="${y(s) + 3.5}" text-anchor="end" font-size="10" style="fill:var(--mut)">${s}</text>`;
+  for (let i = 0; i < gun; i++) {
+    const d = addD(bas, i), x = sl + i * bw;
+    if (d.getDate() === 1 || i === 0) g += `<line x1="${x}" x2="${x}" y1="${ust}" y2="${H - alt}" style="stroke:var(--line)" stroke-dasharray="2 3"/><text x="${x + 2}" y="${H - 5}" font-size="10" style="fill:var(--mut)">${AYK[d.getMonth()]}</text>`;
+    if (i < gecen) {
+      const sa = V[i] / 60, yy = y(sa);
+      g += `<rect data-cs="${dk(d)}" x="${x + bw * .12}" y="${V[i] ? yy : H - alt - 2}" width="${Math.max(1, bw * .76)}" height="${V[i] ? H - alt - yy : 2}" rx="1" style="fill:${V[i] ? (sa >= 8 ? 'var(--g2)' : sa >= 4 ? 'var(--blue)' : 'var(--gold)') : 'var(--line)'};cursor:pointer"><title>${tarihK(d)}: ${V[i] ? csYaz(V[i]) : 'girilmedi'}</title></rect>`;
+    }
+  }
+  let yol = '';
+  for (let i = 0; i < gecen; i++) { const a = V.slice(Math.max(0, i - 6), i + 1), o = a.reduce((p, c) => p + c, 0) / a.length / 60; yol += (i ? 'L' : 'M') + (sl + i * bw + bw / 2).toFixed(1) + ' ' + y(o).toFixed(1); }
+  if (gecen > 1) g += `<path d="${yol}" fill="none" style="stroke:#e78bff" stroke-width="1.6"/>`;
+  if (gecen > 0 && gecen <= gun) { const x = sl + (gecen - 1) * bw + bw / 2; g += `<line x1="${x}" x2="${x}" y1="${ust}" y2="${H - alt}" style="stroke:var(--acc)" stroke-width="1"/>`; }
+  const gunler = [0, 1, 2, 3, 4, 5, 6].map(i => { const d = addD(hb, i), n = csDk(d), ilerde = d > bg || d < bas; return `<button class="btn sm" ${ilerde ? 'disabled' : `data-cs="${dk(d)}"`} title="${GUN[i]} ${tarihK(d)}" style="flex:1;min-width:0;padding:4px 0;line-height:1.25;${d.getTime() === bg.getTime() ? 'border-color:var(--acc)' : ''}">${GUNK[i]}<br><b style="color:${ilerde ? 'var(--mut)' : n ? 'var(--ink)' : 'var(--r2)'}">${ilerde ? '·' : n ? (Math.round(n / 6) / 10).toString().replace('.', ',') : '—'}</b></button>`; }).join('');
+  return `<div class="bcl">
+    <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 8px">
+      <div><div class="mut sm">Bugün</div><div style="font-size:24px;font-weight:800;color:${bu ? 'var(--g2)' : 'var(--mut)'}">${bu ? csYaz(bu) : 'girilmedi'}</div></div>
+      <button class="btn ok" data-cs="${dk(bg)}">${bu ? '✏ Değiştir' : '＋ Bugünkü saati gir'}</button><span class="sp"></span>
+      <div class="mut sm" style="text-align:right;line-height:1.5">Bu hafta <b style="color:var(--ink)">${csYaz(haf)}</b><br>Toplam <b style="color:var(--ink)">${csYaz(top)}</b> · günlük ort. <b style="color:var(--ink)">${csYaz(ort)}</b></div></div>
+    <div style="display:flex;gap:3px;margin-bottom:8px">${gunler}</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${g}</svg>
+    <div class="mut sm" style="margin-top:4px">${tarihK(bas)} – TYT (${tarihK(TYT)}) · ${gun} gün · çubuk = o günkü saat (dokun = değiştir) · <span style="color:#e78bff">pembe çizgi</span> = son 7 gün ortalaması</div></div>`;
+}
 function suEkle(n) {
   if (!DILAY()) return;
   const k = 'SU|' + dk(new Date()), v = Math.max(0, (+B.get('serbest', k) || 0) + n);
@@ -960,6 +1016,7 @@ document.addEventListener('click', e => {
   const mo = e.target.closest('[data-mola]'); if (mo) { const [ds, id] = mo.dataset.mola.split('|'); molaAc(ds, id); return; }
   const et = e.target.closest('[data-evt]'); if (et) { const [ds, zi] = et.dataset.evt.split('|'); isTik(ds, 'ev' + zi); return; }
   const su = e.target.closest('[data-su]'); if (su) { suEkle(+su.dataset.su); return; }
+  const cs = e.target.closest('[data-cs]'); if (cs) { csGir(cs.dataset.cs); return; }
   const kv = e.target.closest('[data-kav]'); if (kv) { kavanozEkle(+kv.dataset.kav); return; }
   const pn = e.target.closest('[data-pen]'); if (pn) { pencereDegistir(pn.dataset.pen); return; }
   const im = e.target.closest('[data-ismenu]'); if (im) { isMenu(im.dataset.ismenu, e); return; }

@@ -139,19 +139,23 @@ table.tb{border-collapse:collapse;width:100%}table.tb td,table.tb th{padding:7px
 .dcov .dsil{position:absolute;bottom:6px;right:6px;border:0;border-radius:8px;background:rgba(0,0,0,.55);color:#fff;padding:4px 7px;cursor:pointer;font-size:13px}
 .pq{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:0;background:var(--p);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;cursor:pointer}
 .pq-sol{padding:12px}.pq-bos{border-left:2px dashed var(--line);padding:10px;color:var(--mut);font-size:12px;min-height:160px}
-.baski-baslik{display:none}
+.baski-baslik{display:none}.cevapanahtar{display:none}.pqno{color:var(--mut);margin-right:2px}
+.cevapanahtar h3{margin:0 0 8px;font-size:15px}.cevapanahtar ol{columns:2;column-gap:10mm;margin:0;padding-left:24px;font-size:12.5px}.cevapanahtar li{break-inside:avoid;padding:2px 0;border-bottom:1px dotted #bbb}.cevapanahtar li b{display:inline-block;min-width:16px}
 @media (max-width:640px){.pq{grid-template-columns:1fr}.pq-bos{display:none}}
 @media print{
   .notk{break-inside:avoid;border:1px solid #bbb;background:#fff}.notk img{max-height:none}
   header.ust,#toast,.noprint,.chips,#kpanel,.modal,#ctx,#yksbar{display:none!important}
   body{background:#fff!important;color:#000!important;padding:0}main{padding:0}
   .baski-baslik{display:block;font-weight:800;font-size:15px;margin:0 0 10px}
+  .cevapanahtar{display:block;break-before:page;page-break-before:always}
+  .pq.basma{display:none!important}
   .pq{grid-template-columns:58% 42%!important;border:1px solid #999;background:#fff;break-inside:avoid;page-break-inside:avoid;border-radius:6px}
   .pq-bos{display:block!important;border-left:1px dashed #888;min-height:260px;color:#888}
   .pq .chip{border:1px solid #999;background:#fff!important;color:#000!important}
   .soru{border:0;padding:0}
 }.pdfkap{width:190mm;background:#fff;color:#000;font:13px/1.45 system-ui,"Segoe UI",sans-serif;padding:0}
 .pdfkap .baski-baslik{display:block!important;font-weight:800;font-size:15px;margin:0 0 8px}
+.pdfkap .cevapanahtar{display:block!important;break-before:page;page-break-before:always}
 .pdfkap .pq{display:grid!important;grid-template-columns:58% 42%;border:1px solid #999;border-radius:6px;background:#fff;margin-bottom:8px;break-inside:avoid;page-break-inside:avoid}
 .pdfkap .pq-sol{padding:8px}.pdfkap .pq-bos{display:block!important;border-left:1px dashed #888;min-height:240px;color:#888;padding:8px}
 .pdfkap .notk{background:#fff;border:1px solid #bbb;border-radius:6px;padding:10px;margin-bottom:8px;break-inside:avoid;color:#000}
@@ -237,7 +241,9 @@ const YENI_PROG = parseD(AYAR.yeniProgram || '2026-11-18'), yeniMi = d => gunOf(
 const pazYeni = d => d.getDay() === 0 && yeniMi(d);
 // yavas baslangic: 19 Kasim'da ilk 5 pomodoro, her gun bir fazla, 26 Kasim'dan itibaren 12
 const RAMPA_BAS = new Date(2026, 10, 19), rampa = d => { const g = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - RAMPA_BAS) / 864e5); return g < 0 ? 12 : Math.min(12, 5 + g); };
-const gMax = d => Math.min(12, rampa(d)), pomB = (d, no) => POM[no - 1];   // Pazar da diger gunler gibi 12 pomodoro
+// 23 Kasim'dan itibaren Pazar: 10:00-13:00 deneme, 7 pomodoro (03:15 04:15 05:15 14:15 16:45 17:45 18:45)
+const PAZ7_BAS = new Date(2026, 10, 23), paz7 = d => d.getDay() === 0 && d >= PAZ7_BAS, POM_PAZ7 = ['03:15', '04:15', '05:15', '14:15', '16:45', '17:45', '18:45'].map(s => { const a = s.split(':'); return +a[0] * 60 + +a[1]; });
+const gMax = d => Math.min(paz7(d) ? 7 : 12, rampa(d)), pomB = (d, no) => (paz7(d) ? POM_PAZ7 : POM)[no - 1];
 const hhmm = m => p2(Math.floor(m / 60)) + ':' + p2(m % 60);
 const fmt = n => (Math.round(n * 100) / 100).toString().replace('.', ',');
 const GOMULU = location.protocol === 'file:';   // bilgisayardaki YKS App icinde aciliyor
@@ -1142,7 +1148,7 @@ app.addEventListener('change', e => {
   if (e.target.id === 'toplupdf' && e.target.files.length) topluPdf([...e.target.files]);
   if (e.target.dataset.nf) { if (e.target.dataset.nf === 'ders') { nDers = e.target.value; nKonu = ''; } else nKonu = e.target.value; ciz(); return; }
   if (e.target.dataset.hf) { if (e.target.dataset.hf === 'grup') { hGrup = e.target.value; hKonu = ''; } else hKonu = e.target.value; ciz(); return; }
-  if (e.target.dataset.odsec) { if (e.target.checked) odevSec.add(e.target.dataset.odsec); else odevSec.delete(e.target.dataset.odsec); const b = document.querySelector('[data-a=odevolustur]'); if (b) b.textContent = '📝 Ödev oluştur (' + odevSec.size + ')'; }
+  if (e.target.dataset.odsec) { if (e.target.checked) odevSec.add(e.target.dataset.odsec); else odevSec.delete(e.target.dataset.odsec); const y = scrollY; ciz(); scrollTo(0, y); }
 });
 app.addEventListener('input', e => {
   const t = e.target;
@@ -1480,17 +1486,30 @@ function cizHatalarim(L) {
     ${hGrup ? `<select data-hf="konu" style="flex:2;min-width:180px"><option value="">Bütün konular</option>${konuItems(hGrup).map(k => { const c = tH.filter(x => x.grup === hGrup && x.konu === k).length; return `<option value="${esc(k)}" ${k === hKonu ? 'selected' : ''}>${esc(k)}${c ? ' (' + c + ')' : ''}</option>`; }).join('')}</select>` : ''}
     ${DILAY() ? '<button class="btn" data-a="hataekle">＋ Hata ekle</button>' : ''}</div>
     <div class="row" style="margin-bottom:10px"><button class="btn" data-a="tumsec">☑ Görünenlerin hepsini seç (${F.length})</button>${odevSec.size ? '<button class="btn" data-a="secimtemizle">Seçimi temizle</button>' : ''}<button class="btn ok" data-a="odevolustur">📝 Ödev oluştur (${odevSec.size})</button><span class="sp"></span><button class="btn" data-a="pdfindir">📄 PDF indir</button><button class="btn pri" data-a="yazdir">🖨 Yazdır</button></div></div>
-    <div class="baski-baslik">Hatalarım · ${hTur === 'Hepsi' ? 'tümü' : TURAD[hTur]}${hGrup ? ' · ' + hGrup : ''}${hKonu ? ' · ' + hKonu : ''} · ${F.length} soru · ${new Date().toLocaleDateString('tr-TR')}</div>`;
+    <div class="baski-baslik">Hatalarım · ${hTur === 'Hepsi' ? 'tümü' : TURAD[hTur]}${hGrup ? ' · ' + hGrup : ''}${hKonu ? ' · ' + hKonu : ''} · ${F.filter(x => odevSec.has(x.k)).length || F.length} soru · ${new Date().toLocaleDateString('tr-TR')}</div>`;
   if (!F.length) return h + `<div class="card mut">Bu seçimde hata yok.${DILAY() ? ' Denemelerde soruları işaretleyerek ya da "＋ Hata ekle" ile ekleyebilirsin.' : ''}</div>`;
+  // soru secildiyse PDF / yazdirma sadece secilenleri ve onlarin cevap anahtarini cikarir
+  const SEC = F.filter(x => odevSec.has(x.k)), BAS = SEC.length ? SEC : F;
+  if (SEC.length) h += `<div class="card noprint" style="border-color:var(--acc);margin-bottom:10px">🖨 PDF ve yazdırma sadece <b>seçtiğin ${SEC.length} soruyu</b> ve cevap anahtarını çıkaracak. Hepsini çıkarmak için "Seçimi temizle".</div>`;
   F.forEach(x => {
-    const tk = T[x.k];
-    h += `<div class="pq" data-hk="${esc(x.k)}"><div class="pq-sol"><div class="row" style="margin-bottom:6px;gap:6px"><b>${esc(x.baslik)}</b><span class="chip ${x.v === 'b' ? 'y' : 'r'}" style="${x.v === 'k' ? 'background:#6b1f2a;color:#fff' : ''}">${TURAD[x.v]}</span><span class="mut sm">${esc(x.kaynak)}</span>${x.konu ? `<span class="chip b">${esc(x.konu)}</span>` : (DILAY() ? '<span class="chip noprint">konu seçilmedi</span>' : '')}${tk ? `<span class="chip noprint">tekrar: ${tk.d}✓ ${tk.y}✗</span>` : ''}<span class="sp"></span><label class="noprint sm row" style="gap:4px" data-nohq="1"><input type="checkbox" data-odsec="${esc(x.k)}" ${odevSec.has(x.k) ? 'checked' : ''}> ödeve ekle</label></div>
+    const tk = T[x.k], no = BAS.indexOf(x) + 1;
+    h += `<div class="pq ${no ? '' : 'basma'}" data-hk="${esc(x.k)}"><div class="pq-sol"><div class="row" style="margin-bottom:6px;gap:6px"><b>${no ? `<span class="pqno">${no}.</span> ` : ''}${esc(x.baslik)}</b><span class="chip ${x.v === 'b' ? 'y' : 'r'}" style="${x.v === 'k' ? 'background:#6b1f2a;color:#fff' : ''}">${TURAD[x.v]}</span><span class="mut sm">${esc(x.kaynak)}</span>${x.konu ? `<span class="chip b">${esc(x.konu)}</span>` : (DILAY() ? '<span class="chip noprint">konu seçilmedi</span>' : '')}${tk ? `<span class="chip noprint">tekrar: ${tk.d}✓ ${tk.y}✗</span>` : ''}<span class="sp"></span><label class="noprint sm row" style="gap:4px" data-nohq="1"><input type="checkbox" data-odsec="${esc(x.k)}" ${odevSec.has(x.k) ? 'checked' : ''}> ödeve ekle</label></div>
       ${x.s.f ? `<div class="soru">${guvenli(x.s.f)}</div>` : x.s.img ? `<div class="soru"><img src="${x.s.img}"></div>` : `<div class="mut sm" style="padding:10px;border:1px dashed var(--line);border-radius:8px">Soru görseli yok${DILAY() ? ' — dokun, fotoğraf ekle' : ''}</div>`}
       <div class="noprint">${x.s.not || x.s.cimg ? `<div class="sm" style="margin-top:6px;color:var(--g2)"><b>✍ ${KOC() ? 'Dilay\'ın çözümü' : 'Çözümüm'}:</b> ${esc(x.s.not || '')}${x.s.cimg ? ' <span class="chip ok">📷 fotoğraf</span>' : ''}</div>` : `<div class="sm mut" style="margin-top:6px">✍ ${DILAY() ? 'Çözüm eklenmedi — dokun, çözüm ekle' : 'Çözüm yok'}</div>`}
       ${x.kn && (x.kn.not || x.kn.cimg) ? `<div class="sm" style="margin-top:4px;color:var(--blue)"><b>💬 ${KOC() ? 'Senin notun / çözümün' : 'Koç'}:</b> ${esc(x.kn.not || '')}${x.kn.cimg ? ' <span class="chip b">📷 çözüm fotoğrafı</span>' : ''}</div>` : ''}</div></div>
       <div class="pq-bos"><span>Tekrar çöz</span></div></div>`;
   });
-  return h;
+  return h + cevapAnahtari(BAS);
+}
+// PDF / yazdirma sonunda cevap anahtari: denemeden gelen sorularda kitapcik anahtari, elle eklenenlerde "Dogru cevap"
+function hataCevap(x) {
+  if (x.manuel || String(x.k || '').startsWith('h|')) return { c: temizC((B.get('hata', x.id || x.k.slice(2)) || {}).cevap), sen: '' };
+  if (!x.r || !x.a || !x.q) return { c: '', sen: '' };
+  const c = temizC(anahtarOf(x.r, x.a))[x.q - 1] || '', s = temizC((x.r.cevap || {})[x.a])[x.q - 1] || '';
+  return { c: c === '*' ? 'iptal' : c, sen: s && s !== '-' ? s : (x.v === 'b' ? 'boş' : '') };
+}
+function cevapAnahtari(F) {
+  return `<div class="cevapanahtar"><h3>🔑 Cevap anahtarı · ${F.length} soru</h3><ol>${F.map(x => { const o = hataCevap(x); return `<li><b>${o.c ? esc(o.c) : '—'}</b> <span style="color:#555">${esc(x.baslik)}${o.sen ? ' · senin: ' + esc(o.sen) : ''}</span></li>`; }).join('')}</ol></div>`;
 }
 // elle hata ekle / duzenle (hangi denemeden oldugu sadece Dilay'da gorunur)
 function hataDuzenle(id) {
@@ -1500,6 +1519,7 @@ function hataDuzenle(id) {
   bx.innerHTML = `<div class="mh"><b style="font-size:16px">${id ? (ro ? 'Soru' : 'Hatayı düzenle') : 'Hata ekle'}</b><span class="sp"></span><button class="btn" id="hxk">✕</button></div>
     ${ro ? '' : `<div class="mut sm" style="margin:8px 0 4px">Hangi denemeden / kaynaktan? <span style="opacity:.7">(sadece sen görürsün)</span></div><input type="text" id="hxs" value="${esc(x.kaynak || '')}" placeholder="ör. Limit TYT 2 · 12. soru">`}
     <div class="mut sm" style="margin:10px 0 4px">Hata türü</div><div class="chips" style="margin:0">${['y', 'k', 'b'].map(v => `<button class="${x.tur === v ? 'on' : ''}" data-hxt="${v}" ${ro ? 'disabled' : ''}>${TURAD[v]}</button>`).join('')}</div>
+    <div class="mut sm" style="margin:10px 0 4px">Doğru cevap <span style="opacity:.7">(PDF'in sonundaki cevap anahtarına yazılır)</span></div><div class="chips" style="margin:0">${['A', 'B', 'C', 'D', 'E'].map(v => `<button class="${x.cevap === v ? 'on' : ''}" data-hxc="${v}" ${ro ? 'disabled' : ''}>${v}</button>`).join('')}</div>
     <div class="mut sm" style="margin:10px 0 4px">Ders ve konu${KOC() ? ' <span style="opacity:.75">(yanlışsa düzeltebilirsin)</span>' : k && hataEk(k).grup ? ' <span style="color:var(--blue)">(koç düzeltti)</span>' : ''}</div><div class="row">${konuSec('hx', g0, c0, ro && !k)}</div>
     ${x.img ? `<div class="soru" style="margin-top:10px"><img src="${x.img}"></div>` : ''}
     ${ro ? '' : `<label class="btn sm" style="margin-top:10px;display:inline-block">📷 ${x.img ? 'Soru fotoğrafını değiştir' : 'Soru fotoğrafı ekle'}<input type="file" id="hxi" accept="image/*" hidden></label>`}
@@ -1507,6 +1527,7 @@ function hataDuzenle(id) {
     <div class="row" style="margin-top:12px">${id && !ro ? '<button class="btn no" id="hxsil">🗑 Sil</button>' : ''}<span class="sp"></span><button class="btn ok" id="hxt">Kaydet</button></div>`;
   $('#modal2').classList.add('on');
   bx.querySelectorAll('[data-hxt]').forEach(b => b.onclick = () => { x.tur = b.dataset.hxt; bx.querySelectorAll('[data-hxt]').forEach(c => c.classList.toggle('on', c === b)); });
+  bx.querySelectorAll('[data-hxc]').forEach(b => b.onclick = () => { x.cevap = x.cevap === b.dataset.hxc ? '' : b.dataset.hxc; bx.querySelectorAll('[data-hxc]').forEach(c => c.classList.toggle('on', c.dataset.hxc === x.cevap)); });
   const fi = $('#hxi'); if (fi) fi.onchange = () => { if (fi.files[0]) resim(fi.files[0], 1000, .78, u => { x.img = u; toast('Fotoğraf eklendi, Kaydet\'e bas.'); }); };
   $('#hxk').onclick = () => $('#modal2').classList.remove('on');
   const sil = $('#hxsil'); if (sil) sil.onclick = async () => { if (!await onayla('Bu hata silinsin mi?')) return; B.yaz([{ s: 'hata', k: id, v: Object.assign(x, { sil: true }) }]); ciz(); };
@@ -1803,7 +1824,7 @@ function cizOdevler() {
         <div class="row noprint" style="margin-top:8px">${DILAY() ? `<button class="btn sm ${c[k] === 'd' ? 'ok' : ''}" data-oc="d" data-ok="${esc(k)}">✓ Doğru yaptım</button><button class="btn sm ${c[k] === 'y' ? 'no' : ''}" data-oc="y" data-ok="${esc(k)}">✗ Yanlış yaptım</button>` : (c[k] ? `<span class="chip ${c[k] === 'd' ? 'ok' : 'r'}">${c[k] === 'd' ? 'Doğru yaptı' : 'Yanlış yaptı'}</span>` : '<span class="chip">henüz çözmedi</span>')}
         ${x.s.b ? `<details style="margin-left:auto"><summary class="sm" style="cursor:pointer;color:var(--blue)">Çözüm</summary><div class="cozum">${guvenli(x.s.b)}</div></details>` : ''}</div></div><div class="pq-bos"><span>Çözüm alanı</span></div></div>`;
     });
-    return h;
+    return h + cevapAnahtari(od.sorular.map(k => { const x = soruBilgi(k); x.baslik = x.baslik || (x.a + ' · ' + x.q + '. soru'); return x; }));
   }
   let h = `<div class="mut sm" style="margin-bottom:10px">Ödev oluşturmak için Hatalarım sekmesinde soruları işaretleyip (ya da süzüp "Görünenlerin hepsini seç" deyip) "Ödev oluştur"a bas. Dilay her soruyu "doğru/yanlış yaptım" diye işaretler; her sorunun kaç kez doğru/yanlış yapıldığı Hatalar listesinde görünür.</div>`;
   if (!L.length) return h + '<div class="card mut">Henüz ödev yok.</div>';
@@ -1816,7 +1837,7 @@ function cizOdevler() {
 async function pdfIndir() {
   try { if (!window.html2pdf) await scriptYukle('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'); }
   catch (e) { toast('PDF aracı yüklenemedi (internet gerekiyor).'); return; }
-  const parcalar = [...document.querySelectorAll('#app .baski-baslik, #app .pq, #app .notk')];
+  const parcalar = [...document.querySelectorAll('#app .baski-baslik, #app .pq:not(.basma), #app .notk, #app .cevapanahtar')];
   if (!parcalar.length) { toast('İndirilecek bir şey yok.'); return; }
   const k = document.createElement('div'); k.className = 'pdfkap';
   parcalar.forEach(p => { const c = p.cloneNode(true); c.querySelectorAll('.noprint,button,input,label.noprint,details').forEach(x => x.remove()); k.appendChild(c); });
@@ -1825,7 +1846,7 @@ async function pdfIndir() {
   try {
     await html2pdf().set({ margin: [8, 8, 10, 8], filename: bas.split('·')[0].trim().replace(/[^\wçğıöşüÇĞİÖŞÜ ]+/g, '').replace(/\s+/g, '-') + '.pdf',
       image: { type: 'jpeg', quality: .92 }, html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['.pq', '.notk'] } }).from(k).save();
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], before: ['.cevapanahtar'], avoid: ['.pq', '.notk', '.cevapanahtar li'] } }).from(k).save();
     toast('PDF indirildi.');
   } catch (e) { toast('PDF oluşturulamadı: ' + e.message); }
 }

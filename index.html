@@ -1130,6 +1130,7 @@ app.addEventListener('click', e => {
     case 'guntemizle': { const d = addD(hafta, +t.dataset.g); temizleF(ds => ds === dk(d), `${GUN[gi(d)]} ${tarihK(d)} gününün`); break; }
     case 'dsek': dSek = t.dataset.v; ciz(); break;
     case 'htur': hTur = t.dataset.v; ciz(); break;
+    case 'hkay': hKay = t.dataset.v; hGrup = ''; hKonu = ''; ciz(); break;
     case 'hataekle': hataDuzenle(null); break;
     case 'tumsec': document.querySelectorAll('[data-odsec]').forEach(c => odevSec.add(c.dataset.odsec)); ciz(); toast(odevSec.size + ' soru seçildi.'); break;
     case 'secimtemizle': odevSec.clear(); ciz(); break;
@@ -1477,16 +1478,36 @@ function hataTumu(L) {
   });
   return o;
 }
-let hTur = 'Hepsi', hGrup = '', hKonu = '';
+let hTur = 'Hepsi', hGrup = '', hKonu = '', hKay = '';
+// hata kaynagi sekmesi: her deneme ayri, Final Dergisi aylara gore, kalan elle eklenenler
+const FAY = ['Eylül', 'Ekim', 'Kasım', 'Aralık', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran'];
+function hKayOf(x) {
+  if (!x.manuel) return 'd|' + x.r.id;
+  const kh = (B.get('hata', x.id) || {}).kaynak || '';
+  if (/^Final Dergisi/i.test(kh)) { const ay = FAY.find(a => kh.includes(a)); return 'f|' + (ay || 'Diğer'); }
+  return 'e';
+}
+function hKaySekmeler(H) {
+  const say = {}, ad = {}, tar = {};
+  H.forEach(x => { const k = hKayOf(x); say[k] = (say[k] || 0) + 1; if (k[0] === 'd') { ad[k] = x.r.ad; tar[k] = x.r.tarih || '9999'; } else ad[k] = k === 'e' ? 'Eklediklerim' : 'Final ' + k.slice(2); });
+  const ks = Object.keys(say), d = ks.filter(k => k[0] === 'd').sort((a, b) => tar[a] < tar[b] ? -1 : tar[a] > tar[b] ? 1 : 0);
+  const f = ks.filter(k => k[0] === 'f').sort((a, b) => FAY.indexOf(a.slice(2)) - FAY.indexOf(b.slice(2)));
+  const btn = k => `<button class="${hKay === k ? 'on' : ''}" data-a="hkay" data-v="${esc(k)}">${esc(ad[k])} (${say[k]})</button>`;
+  const sat = (bas, L) => L.length ? `<div class="row" style="margin-bottom:6px;gap:6px;align-items:baseline"><span class="mut sm" style="min-width:82px">${bas}</span><div class="chips" style="flex:1">${L.map(btn).join('')}</div></div>` : '';
+  return { ad, h: `<div class="chips" style="margin-bottom:6px"><button class="${hKay ? '' : 'on'}" data-a="hkay" data-v="">Tüm hatalar (${H.length})</button></div>` + sat('📝 Denemeler', d) + sat('📚 Final', f) + sat('➕ Diğer', ks.filter(k => k === 'e')) };
+}
 function cizHatalarim(L) {
-  const H = hataTumu(L), T = tekrarSay(), tH = H.filter(x => hTur === 'Hepsi' || x.v === hTur);
+  // boslar gizli; sadece fotografini (soru ya da cozum) girdigin boslar gorunur
+  const H0 = hataTumu(L).filter(x => x.v !== 'b' || x.s.img || x.s.cimg), T = tekrarSay(), SK = hKaySekmeler(H0);
+  if (hKay && !SK.ad[hKay]) hKay = '';
+  const H = hKay ? H0.filter(x => hKayOf(x) === hKay) : H0, tH = H.filter(x => hTur === 'Hepsi' || x.v === hTur);
   const F = tH.filter(x => (!hGrup || x.grup === hGrup) && (!hKonu || x.konu === hKonu));
-  let h = `<div class="noprint"><div class="chips" style="margin-bottom:8px">${[['Hepsi', 'Hepsi'], ['y', 'Yanlış'], ['k', 'Dikkat hatası'], ['b', 'Boş']].map(([k, a]) => `<button class="${hTur === k ? 'on' : ''}" data-a="htur" data-v="${k}">${a} (${k === 'Hepsi' ? H.length : H.filter(x => x.v === k).length})</button>`).join('')}</div>
+  let h = `<div class="noprint">${SK.h}<div class="chips" style="margin:4px 0 8px">${[['Hepsi', 'Hepsi'], ['y', 'Yanlış'], ['k', 'Dikkat hatası'], ['b', 'Boş']].map(([k, a]) => `<button class="${hTur === k ? 'on' : ''}" data-a="htur" data-v="${k}">${a} (${k === 'Hepsi' ? H.length : H.filter(x => x.v === k).length})</button>`).join('')}</div>
     <div class="row" style="margin-bottom:8px"><select data-hf="grup" style="flex:1;min-width:170px"><option value="">Bütün dersler</option>${KG_AD.map(g => { const c = tH.filter(x => x.grup === g).length; return `<option value="${esc(g)}" ${g === hGrup ? 'selected' : ''}>${esc(g)}${c ? ' (' + c + ')' : ''}</option>`; }).join('')}</select>
     ${hGrup ? `<select data-hf="konu" style="flex:2;min-width:180px"><option value="">Bütün konular</option>${konuItems(hGrup).map(k => { const c = tH.filter(x => x.grup === hGrup && x.konu === k).length; return `<option value="${esc(k)}" ${k === hKonu ? 'selected' : ''}>${esc(k)}${c ? ' (' + c + ')' : ''}</option>`; }).join('')}</select>` : ''}
     ${DILAY() ? '<button class="btn" data-a="hataekle">＋ Hata ekle</button>' : ''}</div>
     <div class="row" style="margin-bottom:10px"><button class="btn" data-a="tumsec">☑ Görünenlerin hepsini seç (${F.length})</button>${odevSec.size ? '<button class="btn" data-a="secimtemizle">Seçimi temizle</button>' : ''}<button class="btn ok" data-a="odevolustur">📝 Ödev oluştur (${odevSec.size})</button><span class="sp"></span><button class="btn" data-a="pdfindir">📄 PDF indir</button><button class="btn pri" data-a="yazdir">🖨 Yazdır</button></div></div>
-    <div class="baski-baslik">Hatalarım · ${hTur === 'Hepsi' ? 'tümü' : TURAD[hTur]}${hGrup ? ' · ' + hGrup : ''}${hKonu ? ' · ' + hKonu : ''} · ${F.filter(x => odevSec.has(x.k)).length || F.length} soru · ${new Date().toLocaleDateString('tr-TR')}</div>`;
+    <div class="baski-baslik">Hatalarım${hKay ? ' · ' + esc(SK.ad[hKay]) : ''} · ${hTur === 'Hepsi' ? 'tümü' : TURAD[hTur]}${hGrup ? ' · ' + hGrup : ''}${hKonu ? ' · ' + hKonu : ''} · ${F.filter(x => odevSec.has(x.k)).length || F.length} soru · ${new Date().toLocaleDateString('tr-TR')}</div>`;
   if (!F.length) return h + `<div class="card mut">Bu seçimde hata yok.${DILAY() ? ' Denemelerde soruları işaretleyerek ya da "＋ Hata ekle" ile ekleyebilirsin.' : ''}</div>`;
   // soru secildiyse PDF / yazdirma sadece secilenleri ve onlarin cevap anahtarini cikarir
   const SEC = F.filter(x => odevSec.has(x.k)), BAS = SEC.length ? SEC : F;

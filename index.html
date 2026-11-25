@@ -402,6 +402,36 @@ function kaynakTik(metin, v) {
   const b = KB.find(x => x.n === m[0]); if (kval(b, m[1]) === v) return false;
   const s = Object.assign({}, kS(m[0])); s[m[1]] = v; B.yaz([{ s: 'kaynak', k: kK(m[0]), v: s }]); return true;
 }
+// Tamamlandi: pomodoronun planindaki her gorev isaretlenir, kaynakta da cozuldu olur (baska deger girilmisse dokunulmaz)
+function kaynakCozuldu(ad) { const m = TESTMAP[(ad || '').trim()]; if (!m) return 0; const b = KB.find(x => x.n === m[0]); return !kval(b, m[1]) && kaynakTik(ad, 1) ? 1 : 0; }
+function pomTamamla(key) {
+  const L = planSatir(key), dolu = L.filter(r => r.ad.trim()); let n = 0;
+  if (dolu.some(r => !r.d)) { dolu.forEach(r => r.d = true); B.yaz([{ s: 'plan', k: key, v: planMetin(L) }]); }
+  dolu.forEach(r => n += kaynakCozuldu(r.ad));
+  if (n) toast(n + ' test kaynaklarda da çözüldü olarak işaretlendi.');
+}
+// bilgisayardaki alarm penceresinden gelen isaretler kaynaklara da islenir
+function kopruKaynak(eski, ops) {
+  ops.forEach(o => {
+    if (o.s === 'plan' && o.v) { const e = new Set(String(eski[o.k] || '').split('\n').filter(x => x.startsWith('1|')).map(x => x.split('|').slice(2).join('|').trim())); String(o.v).split('\n').forEach(x => { if (!x.startsWith('1|')) return; const ad = x.split('|').slice(2).join('|').trim(); if (ad && !e.has(ad)) kaynakCozuldu(ad); }); }
+    if (o.s === 'takip' && o.v === true) { const p = o.k.split('|'); if (p.length === 3 && /^\d+$/.test(p[1]) && /^\d+$/.test(p[2])) pomTamamla(pKey(addD(parseD(p[0]), +p[1]), +p[2])); }
+  });
+}
+// bir kez: 25 Kasim 2026 ve oncesi "Tamamlandi" denmis pomodorolarin testleri kaynaklara islenir (elle isaret girilmis teste dokunulmaz)
+function gecmisKaynak() {
+  if (!DILAY() || GOMULU || B.get('ozel', 'gecmisKaynak1')) return -1;
+  const bugun = dk(new Date()); let n = 0;
+  Object.entries(T()).forEach(([k, v]) => {
+    const p = k.split('|'); if (v !== true || p.length !== 3 || !/^[0-9]{4}-/.test(p[0]) || !/^[0-9]+$/.test(p[1]) || !/^[0-9]+$/.test(p[2])) return;
+    const key = pKey(addD(parseD(p[0]), +p[1]), +p[2]); if (key.slice(0, 10) > '2026-11-25' || key.slice(0, 10) > bugun) return;
+    planOzet(key).forEach(r => { const m = TESTMAP[r.ad.trim()]; if (m && kS(m[0])[m[1]] === undefined) n += kaynakCozuldu(r.ad); });
+  });
+  B.yaz([{ s: 'ozel', k: 'gecmisKaynak1', v: n }]);
+  if (n) toast('Eski tamamlananlardan ' + n + ' test kaynaklarda çözüldü olarak işaretlendi.');
+  return n;
+}
+// yalnizca buluttan eksiksiz cekildikten sonra (eski onbellekle yazmasin)
+B.on(x => { if (x.uzak !== undefined && x.durum === 'çevrimiçi') gecmisKaynak(); });
 function planliTestler() { const o = {}; Object.entries(P()).forEach(([k, v]) => { if (!/^\d{4}-/.test(k) || !v) return; String(v).split('\n').forEach(x => { const a = x.split('|').slice(2).join('|').trim(); if (TESTMAP[a]) o[a] = k; }); }); return o; }
 
 /* ====== HAFTALIK PLAN ====== */
@@ -633,7 +663,17 @@ function rutinHafta(bg) {
   return `<div class="rhaf"><div class="rhb"><b>🔁 Rutinler · bu hafta</b>${ty == null ? '' : `<span class="sm" style="font-weight:700;color:${ty >= 80 ? 'var(--g2)' : ty >= 50 ? 'var(--gold)' : 'var(--r2)'}">%${ty} (${tYap}/${tDue})</span>`}</div>
     <table class="rtb"><colgroup><col style="width:34%">${G.map(() => '<col>').join('')}</colgroup><tr><th></th>${G.map(d => `<th class="${dk(d) === dk(bg) ? 'bugun' : ''}">${GUNK[gi(d)]}</th>`).join('')}</tr>${rows}</table></div>`;
 }
-function isTik(ds, id) { const k = 'T|' + ds + '|' + id, n = new Date(); B.yaz([{ s: 'serbest', k, v: B.get('serbest', k) ? null : (ds === dk(n) ? hm(n) : 'var') }]); ciz(); }
+function isTik(ds, id) {
+  const k = 'T|' + ds + '|' + id, n = new Date(), v = B.get('serbest', k) ? null : (ds === dk(n) ? hm(n) : 'var'), ops = [{ s: 'serbest', k, v }];
+  // listeli rutin: Tamamlandi deyince icindeki butun maddeler isaretlenir
+  const r = v && jp(B.get('serbest', 'R|' + id));
+  if (r && Array.isArray(r.liste) && r.liste.length) {
+    const M = molaMaddeler(r.liste, ds, id), hep = M.filter(x => !x.ev).map(x => x.i);
+    if (hep.length) ops.push({ s: 'serbest', k: 'M|' + ds + '|' + id, v: hep.join(',') });
+    if (M.some(x => x.ev && !x.on)) ops.push({ s: 'serbest', k: 'T|' + ds + '|ev0', v });
+  }
+  B.yaz(ops); ciz();
+}
 // ekle / duzenle penceresi. o: {tur:'G'|'R', id, ds} (duzenleme) ya da {saat} (yeni)
 function isDuzenle(o) {
   o = o || {}; const bg = gunOf(new Date());
@@ -779,7 +819,7 @@ function evHafta(bg) {
     return `<tr class="${bu ? 'bugun' : ''}"><th>${GUNK[gi(d)]}</th>${tds}</tr>`;
   }).join('');
   const y = due ? Math.round(100 * yap / due) : null, paz = gi(bg) === 6, eski = !yeniMi(hb);
-  return `<div class="bcl"><div class="mut sm" style="margin-bottom:6px">Kutuya tıkla: yaptım / geri al. ${eski ? 'Günlük işler (yatak, bulaşık-tezgah, çöp) rutinlerde.' : 'Odanın ayrıntılı listesi o günün Ev temizliği molasında.'}${y == null ? '' : ` Bu hafta <b style="color:${y >= 80 ? 'var(--g2)' : y >= 50 ? 'var(--gold)' : 'var(--r2)'}">%${y}</b> (${yap}/${due})`}</div>
+  return `<div class="bcl"><div class="mut sm" style="margin-bottom:6px">Kutuya tıkla: yaptım / geri al. ${eski ? 'Günlük işler (yatak, bulaşık-tezgah, çöp) rutinlerde.' : 'Odanın ayrıntılı listesi o günün 3. molasında.'}${y == null ? '' : ` Bu hafta <b style="color:${y >= 80 ? 'var(--g2)' : y >= 50 ? 'var(--gold)' : 'var(--r2)'}">%${y}</b> (${yap}/${due})`}</div>
     <div style="overflow-x:auto"><table class="evtb"><colgroup><col style="width:38px">${P.map(() => '<col>').join('')}</colgroup><tr><th></th>${P.map(z => `<th>${esc(z.ad)}</th>`).join('')}</tr>${rows}</table></div>${eski ? `
     <div class="sm" style="margin:10px 0 4px;font-weight:700;color:${paz ? 'var(--gold)' : 'var(--mut)'}">👨 Babadan isteyeceklerim${paz ? ' — bugün Pazar!' : ' (Pazar)'}</div>
     <textarea data-babanot style="min-height:56px" placeholder="Aklına geldikçe yaz, Pazar günü unutma…">${esc(B.get('serbest', 'EV|not') || '')}</textarea>` : ''}</div>`;
@@ -959,7 +999,7 @@ async function kopruSenk(kuru) {
     if (kuru) return { pc, bulut };
     localStorage.setItem('dt_kopru_base', JSON.stringify(base));
     if (pc.length) { const y = await fetch(KOPRU + '/api/set', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ ops: pc.map(o => ({ s: o.s, k: o.k, v: o.v === undefined ? null : o.v })) }) }); if (!y.ok) throw new Error('set ' + y.status); }
-    if (bulut.length) { await B.yaz(bulut); if (['bugun', 'ilac', 'alarm', 'plan'].includes(tab) && !$('#modal').classList.contains('on') && !$('#modal2').classList.contains('on') && !yaziyor()) ciz(); }
+    if (bulut.length) { const eskiP = {}; bulut.forEach(o => { if (o.s === 'plan') eskiP[o.k] = B.get('plan', o.k); }); await B.yaz(bulut); kopruKaynak(eskiP, bulut); if (['bugun', 'ilac', 'alarm', 'plan'].includes(tab) && !$('#modal').classList.contains('on') && !$('#modal2').classList.contains('on') && !yaziyor()) ciz(); }
     return { pc, bulut };
   } catch (e) { if (kopru !== false) { kopru = false; if (tab === 'bugun') ciz(); } return null; }
   finally { kopruMesgul = false; }
@@ -1191,7 +1231,7 @@ function hucreMenu(key, e) {
   { t: '🔀 Yer değiştirmek için seç', f: () => { secili = key; ciz(); } }];
   if (secili && secili !== key) it.push({ t: `🔀 Seçiliyle (#${globNo(secili)}) yer değiştir`, f: () => yerDegistir(secili, key) });
   if (P()[key]) it.push({ t: '🧹 Bu pomodoronun planını temizle', c: 'r', f: () => temizleKeys([key], `#${globNo(key)} pomodoronun planı`) });
-  if (DILAY()) { const k = tikKey(d, +no); it.push('-', { t: T()[k] ? '↩ Tamamlandı işaretini kaldır' : '✓ Tamamlandı', f: () => { B.yaz([{ s: 'takip', k, v: T()[k] ? null : true }]); ciz(); } }); kutuMenuOge(key, it); }
+  if (DILAY()) { const k = tikKey(d, +no); it.push('-', { t: T()[k] ? '↩ Tamamlandı işaretini kaldır' : '✓ Tamamlandı', f: () => { const v = T()[k] ? null : true; B.yaz([{ s: 'takip', k, v }]); if (v) pomTamamla(key); ciz(); } }); kutuMenuOge(key, it); }
   menuAc(it, e);
 }
 /* ====== KUTU KAPATMA (sag tik): kapali[yyyy-mm-dd|no] = ad -> o pomodoro sayilmaz, alarmi calmaz ====== */
@@ -1284,7 +1324,7 @@ mb.addEventListener('click', async e => {
   if (m === 's1' || m === 's2' || m === 's3') { const L = m === 's1' ? [20, 20, 5] : m === 's2' ? [15, 15, 15] : [45]; PL.rows.forEach((r, i) => r.dk = i < L.length ? String(L[i]) : ''); PL.kirli = true; planKaydet(); return planCiz(); }
   if (m === 'temiz') { if (!await onayla('Bu pomodoronun planı silinsin mi?')) return; PL.rows = PL.rows.map(() => ({ d: false, dk: '', ad: '' })); PL.kirli = true; planKaydetHemen(); return planCiz(); }
   if (m === 'yer') { const k = PL.key; planKapat(); secili = k; ciz(); toast('Seçildi. Yer değiştireceği pomodoroya dokun.'); return; }
-  if (m === 'tamam') { planKaydetHemen(); B.yaz([{ s: 'takip', k: tikKey(PL.d, PL.no), v: T()[tikKey(PL.d, PL.no)] ? null : true }]); return planCiz(); }
+  if (m === 'tamam') { PL.kirli = true; planKaydetHemen(); const tk = tikKey(PL.d, PL.no), v = T()[tk] ? null : true; B.yaz([{ s: 'takip', k: tk, v }]); if (v) { pomTamamla(PL.key); PL.rows = planSatir(PL.key); } return planCiz(); }
   if (m === 'coklu') return kaynakCoklu();
   if (m === 'pkekle') {
     if (!pkSecim.size) { toast('Önce test işaretle.'); return; }

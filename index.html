@@ -212,7 +212,7 @@ main.oniz::before{content:'👁 Önizleme: paylaştığın kişiler uygulamayı 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="bulut.js"></script>
-<script src="kaynak-veri.js?v=28"></script>
+<script src="kaynak-veri.js?v=29"></script>
 <script src="deneme-veri.js"></script>
 <script>
 'use strict';
@@ -234,16 +234,10 @@ const tarihK = d => d.getDate() + ' ' + AY[d.getMonth()];
 const PB = parseD(AYAR.programBaslangic), TYT = parseD(AYAR.sinavTYT), AYT = parseD(AYAR.sinavAYT);
 const ILK = haftaBas(PB), SON = haftaBas(TYT);
 const POM = AYAR.pomSaat.map(s => { const a = s.split(':'); return +a[0] * 60 + +a[1]; });
-// Pazar = TYT deneme gunu: 8 pomodoro, farkli saatler (alarm.ps1 Sunday ile ayni)
-const POM_PAZ = (AYAR.pomSaatPazar || ['03:15', '04:15', '05:15', '07:45', '16:45', '17:45', '18:45', '21:00']).map(s => { const a = s.split(':'); return +a[0] * 60 + +a[1]; });
 // yeni program bu tarihte baslar; oncesi eski program (her gun 12 pomodoro, ayni saatler)
 const YENI_PROG = parseD(AYAR.yeniProgram || '2026-11-18'), yeniMi = d => gunOf(d) >= YENI_PROG;
-const pazYeni = d => d.getDay() === 0 && yeniMi(d);
-// yavas baslangic: 19 Kasim'da ilk 5 pomodoro, her gun bir fazla, 26 Kasim'dan itibaren 12
-const RAMPA_BAS = new Date(2026, 10, 19), rampa = d => { const g = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - RAMPA_BAS) / 864e5); return g < 0 ? 12 : Math.min(12, 5 + g); };
-// 23 Kasim'dan itibaren Pazar: 10:00-13:00 deneme, 7 pomodoro (03:15 04:15 05:15 14:15 16:45 17:45 18:45)
-const PAZ7_BAS = new Date(2026, 10, 23), paz7 = d => d.getDay() === 0 && d >= PAZ7_BAS, POM_PAZ7 = ['03:15', '04:15', '05:15', '14:15', '16:45', '17:45', '18:45'].map(s => { const a = s.split(':'); return +a[0] * 60 + +a[1]; });
-const gMax = d => Math.min(paz7(d) ? 7 : 12, rampa(d)), pomB = (d, no) => (paz7(d) ? POM_PAZ7 : POM)[no - 1];
+// her gun 12 pomodoro, saatler her gun ayni (30 Kasim 2026'dan itibaren Pazar da dahil)
+const gMax = () => 12, pomB = (d, no) => POM[no - 1];
 const hhmm = m => p2(Math.floor(m / 60)) + ':' + p2(m % 60);
 const fmt = n => (Math.round(n * 100) / 100).toString().replace('.', ',');
 const GOMULU = location.protocol === 'file:';   // bilgisayardaki YKS App icinde aciliyor
@@ -431,7 +425,24 @@ function gecmisKaynak() {
   return n;
 }
 // yalnizca buluttan eksiksiz cekildikten sonra (eski onbellekle yazmasin)
-B.on(x => { if (x.uzak !== undefined && x.durum === 'çevrimiçi') gecmisKaynak(); });
+B.on(x => { if (x.uzak !== undefined && x.durum === 'çevrimiçi') { gecmisKaynak(); eskiSil(); } });
+// silinmeden once: alarmda isaretlenip buluta hic gitmemis eski tamamlananlar da kaynaklara islenir
+function kopruEski(V) {
+  const isle = ad => { const m = TESTMAP[ad.trim()]; if (m && kS(m[0])[m[1]] === undefined) kaynakCozuldu(ad); };
+  Object.entries(V.takip).forEach(([k, v]) => {
+    const p = k.split('|'); if (v !== true || p.length !== 3 || !/^[0-9]{4}-/.test(p[0]) || !/^[0-9]+$/.test(p[1]) || !/^[0-9]+$/.test(p[2])) return;
+    const key = pKey(addD(parseD(p[0]), +p[1]), +p[2]); if (key.slice(0, 10) >= '2026-11-30' || !V.plan[key]) return;
+    String(V.plan[key]).split(String.fromCharCode(10)).forEach(x => isle(x.split('|').slice(2).join('|')));
+  });
+}
+// 30 Kasim 2026 oncesinin plan, tamamlandi ve kapali kutu kayitlari kalici silinir (once gecmisKaynak islenir; bilgisayardaki alarma kopru ile yansir)
+function eskiSil() {
+  if (!DILAY() || GOMULU || !B.get('ozel', 'gecmisKaynak1') && B.get('ozel', 'gecmisKaynak1') !== 0) return 0;
+  const ops = [];
+  ['plan', 'takip', 'kapali'].forEach(s => Object.keys(B.hepsi(s)).forEach(k => { if (/^[0-9]{4}-[0-9]{2}-[0-9]{2}[|]/.test(k) && k.slice(0, 10) < '2026-11-30') ops.push({ s, k, v: null }); }));
+  if (ops.length) B.yaz(ops);
+  return ops.length;
+}
 function planliTestler() { const o = {}; Object.entries(P()).forEach(([k, v]) => { if (!/^\d{4}-/.test(k) || !v) return; String(v).split('\n').forEach(x => { const a = x.split('|').slice(2).join('|').trim(); if (TESTMAP[a]) o[a] = k; }); }); return o; }
 
 /* ====== HAFTALIK PLAN ====== */
@@ -981,6 +992,7 @@ async function kopruSenk(kuru) {
     const A2 = V.ayar || {}; ['varsayilanSessiz', 'ilaclar', 'kutuAdlari', 'gunAdlari', 'serbestAdlari', 'ayarListesi'].forEach(k => { if (!Array.isArray(A2[k])) A2[k] = A2[k] ? [A2[k]] : []; });
     if (!A2.isinma || Array.isArray(A2.isinma)) A2.isinma = {};
     let base = {}; try { base = JSON.parse(localStorage.getItem('dt_kopru_base') || '{}'); } catch (e) { }
+    if (!kuru) kopruEski(V);
     const pc = [], bulut = [];
     for (const s of KSENK) {
       const L = V[s] || {}, C = B.hepsi(s);
@@ -1519,22 +1531,17 @@ function hataTumu(L) {
   return o;
 }
 let hTur = 'Hepsi', hGrup = '', hKonu = '', hKay = '';
-// hata kaynagi sekmesi: her deneme ayri, Final Dergisi aylara gore, kalan elle eklenenler
+// hata sekmeleri: her deneme ayri; denemeler disindaki (elle eklenen) hatalar ders ders
 const FAY = ['Eylül', 'Ekim', 'Kasım', 'Aralık', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran'];
-function hKayOf(x) {
-  if (!x.manuel) return 'd|' + x.r.id;
-  const kh = (B.get('hata', x.id) || {}).kaynak || '';
-  if (/^Final Dergisi/i.test(kh)) { const ay = FAY.find(a => kh.includes(a)); return 'f|' + (ay || 'Diğer'); }
-  return 'e';
-}
+function hKayOf(x) { return x.manuel ? 'g|' + (x.grup || 'Diğer') : 'd|' + x.r.id; }
 function hKaySekmeler(H) {
   const say = {}, ad = {}, tar = {};
-  H.forEach(x => { const k = hKayOf(x); say[k] = (say[k] || 0) + 1; if (k[0] === 'd') { ad[k] = x.r.ad; tar[k] = x.r.tarih || '9999'; } else ad[k] = k === 'e' ? 'Eklediklerim' : 'Final ' + k.slice(2); });
+  H.forEach(x => { const k = hKayOf(x); say[k] = (say[k] || 0) + 1; if (k[0] === 'd') { ad[k] = x.r.ad; tar[k] = x.r.tarih || '9999'; } else ad[k] = k.slice(2); });
   const ks = Object.keys(say), d = ks.filter(k => k[0] === 'd').sort((a, b) => tar[a] < tar[b] ? -1 : tar[a] > tar[b] ? 1 : 0);
-  const f = ks.filter(k => k[0] === 'f').sort((a, b) => FAY.indexOf(a.slice(2)) - FAY.indexOf(b.slice(2)));
+  const sira = k => { const n = KG_AD.indexOf(k.slice(2)); return n < 0 ? 999 : n; }, g = ks.filter(k => k[0] === 'g').sort((a, b) => sira(a) - sira(b) || a.localeCompare(b, 'tr'));
   const btn = k => `<button class="${hKay === k ? 'on' : ''}" data-a="hkay" data-v="${esc(k)}">${esc(ad[k])} (${say[k]})</button>`;
   const sat = (bas, L) => L.length ? `<div class="row" style="margin-bottom:6px;gap:6px;align-items:baseline"><span class="mut sm" style="min-width:82px">${bas}</span><div class="chips" style="flex:1">${L.map(btn).join('')}</div></div>` : '';
-  return { ad, h: `<div class="chips" style="margin-bottom:6px"><button class="${hKay ? '' : 'on'}" data-a="hkay" data-v="">Tüm hatalar (${H.length})</button></div>` + sat('📝 Denemeler', d) + sat('📚 Final', f) + sat('➕ Diğer', ks.filter(k => k === 'e')) };
+  return { ad, h: `<div class="chips" style="margin-bottom:6px"><button class="${hKay ? '' : 'on'}" data-a="hkay" data-v="">Tüm hatalar (${H.length})</button></div>` + sat('📝 Denemeler', d) + sat('📚 Dersler', g) };
 }
 function cizHatalarim(L) {
   // boslar gizli; sadece fotografini (soru ya da cozum) girdigin boslar gorunur

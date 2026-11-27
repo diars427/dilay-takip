@@ -439,7 +439,9 @@ function kopruEski(V) {
 function eskiSil() {
   if (!DILAY() || GOMULU || !B.get('ozel', 'gecmisKaynak1') && B.get('ozel', 'gecmisKaynak1') !== 0) return 0;
   const ops = [];
-  ['plan', 'takip', 'kapali'].forEach(s => Object.keys(B.hepsi(s)).forEach(k => { if (/^[0-9]{4}-[0-9]{2}-[0-9]{2}[|]/.test(k) && k.slice(0, 10) < '2026-11-27') ops.push({ s, k, v: null }); }));
+  // takip anahtari haftanin pazartesisiyle tutulur (tarih|gun|no): gercek gun hesaplanir, yoksa 27 Kasim haftasinin tikleri de silinirdi
+  const gercek = (s, k) => { const p = k.split('|'); return s === 'takip' && p.length === 3 && /^[0-9]+$/.test(p[1]) ? dk(addD(parseD(p[0]), +p[1])) : k.slice(0, 10); };
+  ['plan', 'takip', 'kapali'].forEach(s => Object.keys(B.hepsi(s)).forEach(k => { if (/^[0-9]{4}-[0-9]{2}-[0-9]{2}[|]/.test(k) && gercek(s, k) < '2026-11-27') ops.push({ s, k, v: null }); }));
   if (ops.length) B.yaz(ops);
   return ops.length;
 }

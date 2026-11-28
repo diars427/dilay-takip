@@ -1054,16 +1054,16 @@ function cizIlacT() {
   let topDue = 0, topAl = 0;
   const rows = L.map(x => {
     let due = 0, al = 0;
-    const [h, m] = x.Saat.split(':').map(Number);
     const tds = G.map(d => {
+      const [h, m] = ilacSaat(x, d).split(':').map(Number);
       const k = dk(d) + '|' + x.Id, v = B.get('ilac', k), z = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m);
       if (v) { due++; al++; return `<td><button class="ib ok" data-ilk="${k}" title="İçildi${/^\d\d:\d\d$/.test(v) ? ' ' + v : ''} — geri almak için tıkla">✓${/^\d\d:\d\d$/.test(v) ? `<small>${v}</small>` : ''}</button></td>`; }
       if (z <= now) { due++; return `<td><button class="ib no" data-ilk="${k}" title="İçilmedi — içtiysen tıkla">✗</button></td>`; }
-      return `<td><button class="ib bos" data-ilk="${k}" title="Henüz saati gelmedi">${dk(d) === dk(bg) ? x.Saat : ''}</button></td>`;
+      return `<td><button class="ib bos" data-ilk="${k}" title="Henüz saati gelmedi — ${ilacSaat(x, d)}">${ilacSaat(x, d)}</button></td>`;
     }).join('');
     topDue += due; topAl += al;
     const y = due ? Math.round(100 * al / due) : null;
-    return `<tr><th class="ilad">${esc(x.Ad)}<div class="mut sm">${x.Saat}${y == null ? '' : ` · <b style="color:${y >= 80 ? 'var(--g2)' : y >= 50 ? 'var(--gold)' : 'var(--r2)'}">%${y}</b>`}</div></th>${tds}</tr>`;
+    return `<tr><th class="ilad">${esc(x.Ad)}<div class="mut sm">${x.SaatYeni ? `Pzt–Cmt ${x.SaatYeni} · Paz ${x.Saat}` : x.Saat}${y == null ? '' : ` · <b style="color:${y >= 80 ? 'var(--g2)' : y >= 50 ? 'var(--gold)' : 'var(--r2)'}">%${y}</b>`}</div></th>${tds}</tr>`;
   }).join('');
   const ty = topDue ? Math.round(100 * topAl / topDue) : null, buHafta = dk(ilacHafta) === dk(haftaBas(bg));
   return `<div class="card"><div class="row"><h2>İlaç takibi</h2><span class="sp"></span>

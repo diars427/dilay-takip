@@ -234,10 +234,12 @@ const tarihK = d => d.getDate() + ' ' + AY[d.getMonth()];
 const PB = parseD(AYAR.programBaslangic), TYT = parseD(AYAR.sinavTYT), AYT = parseD(AYAR.sinavAYT);
 const ILK = haftaBas(PB), SON = haftaBas(TYT);
 const POM = AYAR.pomSaat.map(s => { const a = s.split(':'); return +a[0] * 60 + +a[1]; });
+const POM2 = (AYAR.pomSaatYeni || AYAR.pomSaat).map(s => { const a = s.split(':'); return +a[0] * 60 + +a[1]; });
+const pomYeniMi = d => !!AYAR.pomYeniBas && dk(d) >= AYAR.pomYeniBas && gi(d) !== 6;
 // yeni program bu tarihte baslar; oncesi eski program (her gun 12 pomodoro, ayni saatler)
 const YENI_PROG = parseD(AYAR.yeniProgram || '2026-11-18'), yeniMi = d => gunOf(d) >= YENI_PROG;
 // her gun 12 pomodoro, saatler her gun ayni (30 Kasim 2026'dan itibaren Pazar da dahil)
-const gMax = () => 12, pomB = (d, no) => POM[no - 1];
+const gMax = () => 12, pomB = (d, no) => (pomYeniMi(d) ? POM2 : POM)[no - 1];
 const hhmm = m => p2(Math.floor(m / 60)) + ':' + p2(m % 60);
 const fmt = n => (Math.round(n * 100) / 100).toString().replace('.', ',');
 const GOMULU = location.protocol === 'file:';   // bilgisayardaki YKS App icinde aciliyor
@@ -508,7 +510,9 @@ function cizHafta() {
    Alarm ve muzigi bilgisayardaki program calar; telefon gosterir, "içtim" / "atla" / ses ayarlarini buradan degistirirsin. */
 const GUN_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const OZ = k => B.get('ozel', k);
-const progGun = d => ((yeniMi(d) ? OZ('program') : (OZ('programEski') || OZ('program'))) || {})[GUN_EN[gi(d)]] || [];
+const progGun = d => ((yeniMi(d) ? (OZ('programOnceki') && dk(d) < (OZ('programOncekiBit') || '') ? OZ('programOnceki') : OZ('program')) : (OZ('programEski') || OZ('program'))) || {})[GUN_EN[gi(d)]] || [];
+// ilac saati: 30 Kasimdan itibaren Pzt-Cmt yeni saat (SaatYeni), Pazar ve oncesi eski
+const ilacSaat = (x, d) => x.SaatYeni && pomYeniMi(d) ? x.SaatYeni : x.Saat;
 const pad2 = n => String(n).padStart(2, '0');
 const anahtarZ = z => z.getFullYear() + pad2(z.getMonth() + 1) + pad2(z.getDate()) + pad2(z.getHours()) + pad2(z.getMinutes());
 const zMetin = z => { const f = Math.round((gunOf(z) - gunOf(new Date())) / 864e5); return (f === 0 ? 'Bugün' : f === 1 ? 'Yarın' : GUN[gi(z)]) + ' ' + pad2(z.getHours()) + ':' + pad2(z.getMinutes()); };
@@ -538,7 +542,7 @@ function olaylar(gunSay) {
       L.push({ z, kod: e.k, ad, ses: ses && !at, mj: mj && !at, k, atla: at, sb: e.k === 'S' ? dk(d) + '|' + e.s : '' });
     });
   }
-  (AY2.ilaclar || []).forEach(x => { const [h, m] = x.Saat.split(':').map(Number); for (let o = 0; o <= gunSay; o++) { const d = addD(gunOf(now), o), z = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m); if (z <= now) continue; const k = anahtarZ(z) + '|IL:' + x.Id, at = !!AT[k]; L.push({ z, kod: 'IL', ad: 'İLAÇ: ' + x.Ad, ses: sesVarT('IL') && !at, mj: sesVarT('IL') && !at, k, atla: at }); } });
+  (AY2.ilaclar || []).forEach(x => { for (let o = 0; o <= gunSay; o++) { const d = addD(gunOf(now), o), [h, m] = ilacSaat(x, d).split(':').map(Number), z = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m); if (z <= now) continue; const k = anahtarZ(z) + '|IL:' + x.Id, at = !!AT[k]; L.push({ z, kod: 'IL', ad: 'İLAÇ: ' + x.Ad, ses: sesVarT('IL') && !at, mj: sesVarT('IL') && !at, k, atla: at }); } });
   // rutin / yapacaklarim (saati olan, yapilmamis)
   for (let o = 0; o <= gunSay; o++) {
     const d = addD(gunOf(now), o);
@@ -598,8 +602,7 @@ function cizBugun() {
     <section class="bcol"><div class="bch"><h3>İlaçlar</h3><a class="btn sm" href="#ilac">Takip »</a></div><div class="bcl">${ilacBugun()}</div></section>
     <section class="bcol"><div class="bch"><h3>Alarmlar</h3><a class="btn sm" href="#alarm">Tümü »</a></div><div class="bcl">${alarmListe(Y.slice(0, 25), true)}</div></section></div>
     <div class="bgrid bgrid2">
-    <section class="bcol"><div class="bch"><h3>⏱ Çalışma saati</h3><span class="mut sm">TYT'ye ${k1} gün</span></div>${csKutu(bg)}</section>
-    ${yeniMi(bg) ? `<section class="bcol"><div class="bch"><h3>💧 Su · günde 1 L</h3></div>${suKutu(bg)}</section>` : ''}
+    <section class="bcol"><div class="bch"><h3>☕ Bugünün molaları</h3><span class="mut sm">TYT'ye ${k1} gün</span></div><div class="bcl">${molaGunluk(bg)}</div></section>
     ${masaustuMu() && !GOMULU ? `<section class="bcol"><div class="bch"><h3>🪟 Küçük pencereler</h3></div>${pencereTuslari()}</section>` : ''}</div>
     ${kopruNotu()}`;
   return h;
@@ -607,8 +610,8 @@ function cizBugun() {
 function ilacBugun() {
   const now = new Date(), bg = gunOf(now), A2 = OZ('ayar') || {};
   return (A2.ilaclar || []).map(x => {
-    const k = dk(bg) + '|' + x.Id, v = B.get('ilac', k), [h, m] = x.Saat.split(':').map(Number), z = new Date(bg.getFullYear(), bg.getMonth(), bg.getDate(), h, m);
-    return `<div class="br ${v ? 'bitti' : ''}"><span class="t">${x.Saat}</span><span class="n" style="color:#e78bff;font-weight:700">${esc(x.Ad)}</span>${v ? `<span class="chip ok">✓${/^\d\d:\d\d$/.test(v) ? ' ' + v : ''}</span><button class="btn sm" data-ilk="${k}">geri al</button>` : `${z <= now ? '<span class="chip r">içilmedi</span>' : ''}<button class="btn sm ok" data-ilk="${k}">İçtim</button>`}</div>`;
+    const k = dk(bg) + '|' + x.Id, v = B.get('ilac', k), sa = ilacSaat(x, bg), [h, m] = sa.split(':').map(Number), z = new Date(bg.getFullYear(), bg.getMonth(), bg.getDate(), h, m);
+    return `<div class="br ${v ? 'bitti' : ''}"><span class="t">${sa}</span><span class="n" style="color:#e78bff;font-weight:700">${esc(x.Ad)}</span>${v ? `<span class="chip ok">✓${/^\d\d:\d\d$/.test(v) ? ' ' + v : ''}</span><button class="btn sm" data-ilk="${k}">geri al</button>` : `${z <= now ? '<span class="chip r">içilmedi</span>' : ''}<button class="btn sm ok" data-ilk="${k}">İçtim</button>`}</div>`;
   }).join('') || '<div class="bos">İlaç tanımlı değil.</div>';
 }
 function alarmListe(Y, kisa) {
@@ -791,6 +794,18 @@ function molaMaddeler(liste, ds, id) {
     const yazi = ev ? t.replace('{ev}', 'Günün ev görevi: ' + (evGorev(parseD(ds)) || '—')) : t;
     return { i, saat, yazi, ev, on: ev ? !!B.get('serbest', 'T|' + ds + '|ev0') : on.has(i) };
   });
+}
+// Bugun sayfasi: gunun butun molalari saat saat; su an yapilacak adim vurgulu, maddeye tikla = isaretle
+function molaGunluk(bg) {
+  const ds = dk(bg), nhm = hm(new Date()), bugun = ds === dk(gunOf(new Date())), L = gunIsleri(bg).filter(x => x.liste);
+  if (!L.length) return '<div class="bos">Bugün mola listesi yok.</div>';
+  return L.map(x => {
+    const M = molaMaddeler(x.liste, ds, x.id); let son = x.saat, su = null; const saatler = [];
+    M.forEach(m => { m.s2 = m.saat || son; son = m.s2; if (!saatler.includes(m.s2)) saatler.push(m.s2); });
+    if (bugun && !x.yap) saatler.forEach(t => { if (t <= nhm && M.some(m => m.s2 === t && !m.on)) su = t; });
+    const ust = `<div class="br ${x.yap ? 'bitti' : ''}" style="margin-top:6px"><span class="cb ${x.yap ? 'on' : ''}" data-istik="${ds}|${x.id}" title="Tüm molayı tamamla">${x.yap ? '✓' : ''}</span><span class="t">${x.saat}</span><span class="n"><b>${esc(x.ad)}</b> <span class="mut sm">${x.saat}${x.bitis ? '–' + x.bitis : ''} · ${M.filter(m => m.on).length}/${M.length}</span></span></div>`;
+    return ust + M.map(m => `<div class="br ${m.s2 === su ? 'su' : ''} ${m.on ? 'bitti' : ''}" style="padding-left:22px;cursor:pointer" data-bmtik="${ds}|${x.id}|${m.i}"><span class="cb ${m.on ? 'on' : ''}">${m.on ? '✓' : ''}</span><span class="t mut">${m.saat}</span><span class="n" style="white-space:normal">${m.s2 === su ? '<b>Şimdi:</b> ' : ''}${esc(m.yazi)}</span></div>`).join('');
+  }).join('');
 }
 function molaTik(ds, id, i) {
   const r = jp(B.get('serbest', 'R|' + id)) || {}, M = molaMaddeler(r.liste || [], ds, id), m = M[i]; if (!m) return;
@@ -1008,7 +1023,7 @@ async function kopruSenk(kuru) {
         else { bulut.push({ s, k, v: JSON.parse(ls) }); base[bk] = ls; }
       }
     }
-    const ozel = { program: V.program, programEski: V.programEski, ayar: A2, turler: V.turler, yapilacak: V.yapilacak, uyanis: V.uyanis };
+    const ozel = { program: V.program, programOnceki: V.programOnceki, programOncekiBit: V.programOncekiBit, programEski: V.programEski, ayar: A2, turler: V.turler, yapilacak: V.yapilacak, uyanis: V.uyanis };
     Object.keys(ozel).forEach(k => { if (ozel[k] !== undefined && JSON.stringify(B.get('ozel', k)) !== JSON.stringify(ozel[k])) bulut.push({ s: 'ozel', k, v: ozel[k] }); });
     if (kuru) return { pc, bulut };
     localStorage.setItem('dt_kopru_base', JSON.stringify(base));
@@ -1072,6 +1087,7 @@ document.addEventListener('click', e => {
   if (at) { const k = at.dataset.atla; B.yaz([{ s: 'atlanan', k, v: B.get('atlanan', k) ? null : true }]); ciz(); return; }
   const sp = e.target.closest('[data-sbp]');
   if (sp) { const k = sp.dataset.sbp, A2 = OZ('ayar') || {}; adSor('Serbest mola', 'Bu 1 saatte ne yapacaksın?', B.get('serbest', k) || '', A2.serbestAdlari || []).then(v => { if (v != null) { B.yaz([{ s: 'serbest', k: k + '|T', v: null }, { s: 'serbest', k, v: v || null }]); ciz(); } }); return; }
+  const bm = e.target.closest('[data-bmtik]'); if (bm) { const p = bm.dataset.bmtik.split('|'); molaTik(p[0], p[1], +p[2]); return; }
   const it = e.target.closest('[data-istik]'); if (it) { const [ds, id] = it.dataset.istik.split('|'); isTik(ds, id); return; }
   const mo = e.target.closest('[data-mola]'); if (mo) { const [ds, id] = mo.dataset.mola.split('|'); molaAc(ds, id); return; }
   const et = e.target.closest('[data-evt]'); if (et) { const [ds, zi] = et.dataset.evt.split('|'); isTik(ds, 'ev' + zi); return; }

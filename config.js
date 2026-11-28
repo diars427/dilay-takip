@@ -9,5 +9,8 @@ window.DT_AYAR = {
   sinavTYT: '2027-06-19',
   sinavAYT: '2027-06-20',
   // gunluk 12 pomodoronun baslangic saatleri (her gun ayni, 45 dk)
-  pomSaat: ['03:15', '04:15', '05:15', '07:45', '08:45', '09:45', '12:15', '13:15', '14:15', '16:45', '17:45', '18:45']
+  pomSaat: ['03:15', '04:15', '05:15', '07:45', '08:45', '09:45', '12:15', '13:15', '14:15', '16:45', '17:45', '18:45'],
+  // 30 Kasim 2026 Pazartesiden itibaren Pzt-Cmt (00:00 kalkis, 18:00 yatis). Pazar yukaridaki saatlerde kalir
+  pomYeniBas: '2026-11-30',
+  pomSaatYeni: ['00:15', '01:15', '02:15', '04:45', '05:45', '06:45', '09:15', '10:15', '11:15', '13:45', '14:45', '15:45']
 };

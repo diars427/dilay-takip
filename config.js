@@ -5,7 +5,7 @@ window.DT_AYAR = {
   SUPABASE_URL: 'https://rmtbjjtmsrccmgfuncmx.supabase.co',
   SUPABASE_KEY: 'sb_publishable_zgInqFuFvFFrGoYeT7vKKw_l0ejsFKL',
   KULLANICI_ALANI: 'dilaytakip.local',   // kullanici adi 'kisi1' -> kisi1@dilaytakip.local (gercek e-posta degil)
-  programBaslangic: '2026-11-27',
+  programBaslangic: '2026-11-30',
   sinavTYT: '2027-06-19',
   sinavAYT: '2027-06-20',
   // gunluk 12 pomodoronun baslangic saatleri (her gun ayni, 45 dk)
